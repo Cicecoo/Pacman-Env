@@ -3,14 +3,12 @@ from gymnasium import spaces
 from gymnasium.utils import seeding
 import numpy as np
 
-from .graphicsDisplay import PacmanGraphics, DEFAULT_GRID_SIZE
-
-from .game import Actions
-from .pacman import ClassicGameRules
-from .layout import getLayout, getRandomLayout
-
-from .ghostAgents import DirectionalGhost
-from .pacmanAgents import OpenAIAgent
+from .ucb_pacman.graphicsDisplay import PacmanGraphics, DEFAULT_GRID_SIZE
+from .ucb_pacman.game import Actions
+from .ucb_pacman.pacman import ClassicGameRules
+from .ucb_pacman.layout import getLayout, getRandomLayout
+from .ucb_pacman.ghostAgents import DirectionalGhost
+from .ucb_pacman.pacmanAgents import OpenAIAgent
 
 from gymnasium.utils import seeding
 
@@ -53,9 +51,49 @@ class PacmanEnv(gymnasium.Env):
     observation_space = spaces.Box(low=0, high=255,
             shape=(84, 84, 3), dtype=np.uint8)
 
-    def __init__(self):
+    class HeadlessDisplay:
+        """Minimal display used in headless/fast mode. Provides the
+        methods/properties pacman_env expects but avoids heavy GUI/PostScript
+        work. Returns a simple solid image via PIL.Image.
+        """
+        def __init__(self, image_size=(84, 84)):
+            # image_size expected as (width, height)
+            self.image_size = (int(image_size[0]), int(image_size[1]))
+            # create a black PIL image to mimic the graphics output
+            self.image = PILImage.new('RGB', self.image_size, (0, 0, 0))
+
+        def initialize(self, state):
+            return
+
+        def updateView(self):
+            # no-op
+            return
+
+        def update(self, state):
+            # minimal update: keep a placeholder image available. Avoid any
+            # heavy drawing operations to remain fast.
+            # We could optionally encode some state into the image, but for
+            # headless training a static black image suffices.
+            self.image = PILImage.new('RGB', self.image_size, (0, 0, 0))
+            return
+
+        def finish(self):
+            return
+
+        def calculate_screen_dimensions(self, width, height):
+            # return (screen_width, screen_height) in pixels
+            return self.image_size[0], self.image_size[1]
+
+    def __init__(self, fast=False, image_size=(84, 84)):
+        # fast: if True, use headless minimal display to avoid expensive
+        # rendering (good for training loops). image_size is (width, height).
         self.action_space = spaces.Discrete(4) # up, down, left right
-        self.display = PacmanGraphics(1.0)
+        self.fast = bool(fast)
+        self.image_size = (int(image_size[0]), int(image_size[1]))
+        if self.fast:
+            self.display = PacmanEnv.HeadlessDisplay(self.image_size)
+        else:
+            self.display = PacmanGraphics(1.0)
         self._action_set = range(len(PACMAN_ACTIONS))
         self.location = None
         self.viewer = None
@@ -63,8 +101,12 @@ class PacmanEnv(gymnasium.Env):
         self.layout = None
         self.np_random = None
 
+        self.obs_mode = 'low_dim'  # observation 'image' or 'low_dim'
+        self.terminated = False
+        self.truncated = False
+
     def setObservationSpace(self):
-        screen_width, screen_height = self.display.calculate_screen_dimensions(self.layout.width,   self.layout.height)
+        screen_width, screen_height = self.display.calculate_screen_dimensions(self.layout.width, self.layout.height)
         self.observation_space = spaces.Box(low=0, high=255,
             shape=(int(screen_height),
                 int(screen_width),
@@ -82,7 +124,7 @@ class PacmanEnv(gymnasium.Env):
                 else:
                     chosenLayout = self.np_random.choice(self.noGhost_layouts)
             self.chosen_layout = chosenLayout
-            print("Chose layout", chosenLayout)
+            # print("Chose layout", chosenLayout)
             self.layout = getLayout(chosenLayout)
         self.maze_size = (self.layout.width, self.layout.height)
 
@@ -93,17 +135,30 @@ class PacmanEnv(gymnasium.Env):
         return [seed]
 
     def reset(self, seed=None, options=None, layout=None):
-        # get new layout
-        #if self.layout is None:
-        #    self.chooseLayout(randomLayout=True)
+        try:
+            # seeding.np_random returns (np_random, seed)
+            self.np_random, seed = seeding.np_random(seed)
+        except Exception:
+            if self.np_random is None:
+                self.np_random, _ = seeding.np_random(None)
 
-        self.chooseLayout(randomLayout=True)
+        # choose layout (respect explicit layout if provided)
+        if layout is None:
+            # If an external caller previously set self.layout (for example
+            # via env.chooseLayout(...)), respect that and do not override it
+            # with a new random choice. Only choose a random layout when no
+            # layout has been set yet.
+            if getattr(self, 'layout', None) is None:
+                self.chooseLayout(randomLayout=True)
+        else:
+            # use provided layout name
+            self.chooseLayout(randomLayout=False, chosenLayout=layout)
 
         self.step_counter = 0
-        self.cum_reward = 0
+        self.cumulative_reward = 0
         self.done = False
 
-        self.setObservationSpace()
+        # self.setObservationSpace()
 
         # we don't want super powerful ghosts
         self.ghosts = [DirectionalGhost( i+1, prob_attack=0.2, prob_scaredFlee=0.2) for i in range(MAX_GHOSTS)]
@@ -122,6 +177,7 @@ class PacmanEnv(gymnasium.Env):
         self.display.initialize(self.game.state.data)
         self.display.updateView()
 
+        # initialize state-tracking variables
         self.location = self.game.state.data.agentStates[0].getPosition()
         self.ghostLocations = [a.getPosition() for a in self.game.state.data.agentStates[1:]]
         self.ghostInFrame = any([np.sum(np.abs(np.array(g) - np.array(self.location))) <= 2 for g in self.ghostLocations])
@@ -131,7 +187,7 @@ class PacmanEnv(gymnasium.Env):
         self.orientation_history = [self.orientation]
         self.illegal_move_counter = 0
 
-        self.cum_reward = 0
+        self.cumulative_reward = 0
 
         self.initial_info = {
             'past_loc': [self.location_history[-1]],
@@ -144,29 +200,13 @@ class PacmanEnv(gymnasium.Env):
             'step_counter': [[0]],
         }
 
-        return self._get_image()
+        # Gymnasium expects reset to return (observation, info)
+        return self.get_observation(), dict(self.initial_info)
 
     def step(self, action):
-        # implement code here to take an action
-        if self.step_counter >= MAX_EP_LENGTH or self.done:
+        if self.terminated or self.truncated:
             self.step_counter += 1
-            return np.zeros(self.observation_space.shape), 0.0, True, {
-                'past_loc': [self.location_history[-2]],
-                'curr_loc': [self.location_history[-1]],
-                'past_orientation': [[self.orientation_history[-2]]],
-                'curr_orientation': [[self.orientation_history[-1]]],
-                'illegal_move_counter': [self.illegal_move_counter],
-                'step_counter': [[self.step_counter]],
-                'ghost_positions': [self.ghostLocations],
-                'r': [self.cum_reward],
-                'l': [self.step_counter],
-                'ghost_in_frame': [self.ghostInFrame],
-                'episode': [{
-                    'r': self.cum_reward,
-                    'l': self.step_counter
-                }]
-            }
-
+            return self.get_observation(), 0.0, self.terminated, self.truncated, {}
 
         pacman_action = PACMAN_ACTIONS[action]
 
@@ -178,12 +218,16 @@ class PacmanEnv(gymnasium.Env):
             pacman_action = 'Stop' # Stop is always legal
 
         reward = self.game.step(pacman_action)
-        self.cum_reward += reward
-        # reward shaping for illegal actions
-        if illegal_action:
-            reward -= 10
+        self.cumulative_reward += reward
 
+        # # reward shaping for illegal actions
+        # if illegal_action:
+        #     reward -= 10
+
+        # gymnasium 新接口
         done = self.game.state.isWin() or self.game.state.isLose()
+        terminated = done
+        truncated = self.step_counter + 1 >= MAX_EP_LENGTH
 
         self.location = self.game.state.data.agentStates[0].getPosition()
         self.location_history.append(self.location)
@@ -208,18 +252,37 @@ class PacmanEnv(gymnasium.Env):
             'ghost_in_frame': [self.ghostInFrame],
         }
 
-        if self.step_counter >= MAX_EP_LENGTH:
-            done = True
+        # if self.step_counter >= MAX_EP_LENGTH:
+        #     done = True
 
-        self.done = done
+        # self.done = done
 
-        if self.done: # only if done, send 'episode' info
+        # if self.done: # only if done, send 'episode' info
+        #     info['episode'] = [{
+        #         'r': self.cumulative_reward,
+        #         'l': self.step_counter
+        #     }]
+
+        if terminated or truncated:
             info['episode'] = [{
-                'r': self.cum_reward,
+                'r': self.cumulative_reward,
                 'l': self.step_counter
             }]
-        return self._get_image(), reward, done, info
 
+        return self.get_observation(), reward, terminated, truncated, info
+    
+    def get_observation(self):
+        if self.obs_mode == 'low_dim':
+            return {
+                'location': np.array(self.location),
+                'orientation': np.array(self.orientation),
+                'ghost_positions': np.array(self.ghostLocations),
+                'ghost_in_frame': np.array(self.ghostInFrame, dtype=bool),
+            }
+        
+        elif self.obs_mode == 'image':
+            return self._get_image()
+        
     def get_action_meanings(self):
         return [PACMAN_ACTIONS[i] for i in self._action_set]
 
@@ -241,7 +304,7 @@ class PacmanEnv(gymnasium.Env):
         image = image.crop(extent).resize(self.image_sz)
         return np.array(image)
 
-    def render(self, mode='human'):
+    def render(self, mode='rgb_array'):
         img = self._get_image()
         if mode == 'rgb_array':
             return img

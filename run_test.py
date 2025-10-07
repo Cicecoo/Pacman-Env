@@ -1,9 +1,9 @@
 from PIL import Image
 import gymnasium
-import gym_pacman
+import pacman_env
 import time
 
-env = gymnasium.make('BerkeleyPacmanPO-v0')
+env = gymnasium.make('Pacman-v1')
 # env.seed(1)
 
 
@@ -13,8 +13,9 @@ while True:
     done = False
     env.reset()
     i = 0
-    while i < 5:
+    while i < 100:
         i += 1
-        s_, r, done, info = env.step(env.action_space.sample())
+        action = env.action_space.sample() # 随机采样一个动作
+        obs, reward, terminated, truncated, info = env.step(action)
         env.render()
         

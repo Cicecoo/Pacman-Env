@@ -207,11 +207,11 @@ def randomLayout(layout_params, np_random):
     food_proportion = layout_params.get('food_proportion', 1.0)
     by_proportion = layout_params.get('by_proportion', True)
 
-    start_x, start_y = np_random.randint(1, size - 1), np_random.randint(1, size - 1)
+    start_x, start_y = np_random.integers(1, size - 1), np_random.integers(1, size - 1)
 
 
-    maze = generateMaze(size, 0.3, (start_y, start_x), np_random).astype(np.int)
-    # maze = np.zeros((size, size), dtype=np.int)
+    maze = generateMaze(size, 0.3, (start_y, start_x), np_random).astype(int)
+    # maze = np.zeros((size, size), dtype=int)
     # maze[1:size-1,1:size-1] = maze_
     maze[start_y, start_x] = PACMAN
 

@@ -1,10 +1,10 @@
 from PIL import Image
-import gym
+import gymnasium
 import gym_pacman
 import time
 
-env = gym.make('BerkeleyPacmanPO-v0')
-env.seed(1)
+env = gymnasium.make('BerkeleyPacmanPO-v0')
+# env.seed(1)
 
 
 done = False

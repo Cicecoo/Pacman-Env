@@ -1,6 +1,6 @@
-import gym
-from gym import spaces
-from gym.utils import seeding
+import gymnasium
+from gymnasium import spaces
+from gymnasium.utils import seeding
 import numpy as np
 
 from .graphicsDisplay import PacmanGraphics, DEFAULT_GRID_SIZE
@@ -12,7 +12,7 @@ from .layout import getLayout, getRandomLayout
 from .ghostAgents import DirectionalGhost
 from .pacmanAgents import OpenAIAgent
 
-from gym.utils import seeding
+from gymnasium.utils import seeding
 
 import json
 import os
@@ -40,7 +40,7 @@ for k in layout_params:
     print(k,":",layout_params[k])
 print("------------------")
 
-class PacmanEnv(gym.Env):
+class PacmanEnv(gymnasium.Env):
     layouts = [
         'capsuleClassic', 'contestClassic', 'mediumClassic', 'mediumGrid', 'minimaxClassic', 'openClassic', 'originalClassic', 'smallClassic', 'capsuleClassic', 'smallGrid', 'testClassic', 'trappedClassic', 'trickyClassic'
     ]
@@ -92,7 +92,7 @@ class PacmanEnv(gym.Env):
         self.chooseLayout(randomLayout=True)
         return [seed]
 
-    def reset(self, layout=None):
+    def reset(self, seed=None, options=None, layout=None):
         # get new layout
         #if self.layout is None:
         #    self.chooseLayout(randomLayout=True)
@@ -246,7 +246,7 @@ class PacmanEnv(gym.Env):
         if mode == 'rgb_array':
             return img
         elif mode == 'human':
-            from gym.envs.classic_control import rendering
+            from gymnasium.envs.classic_control import rendering
             if self.viewer is None:
                 self.viewer = rendering.SimpleImageViewer()
             self.viewer.imshow(img)

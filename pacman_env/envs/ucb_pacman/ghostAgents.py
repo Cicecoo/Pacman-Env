@@ -23,6 +23,11 @@ class GhostAgent( Agent ):
     def getAction( self, state ):
         dist = self.getDistribution(state)
         if len(dist) == 0:
+            # Fallback: get any legal action (should not happen with proper layouts)
+            legalActions = state.getLegalActions(self.index)
+            if len(legalActions) > 0:
+                return legalActions[0]
+            # Last resort: STOP (this indicates a serious problem)
             return Directions.STOP
         else:
             return chooseFromDistribution( dist )

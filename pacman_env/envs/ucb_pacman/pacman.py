@@ -388,8 +388,8 @@ class GhostRules:
         possibleActions = Actions.getPossibleActions( conf, state.data.layout.walls )
         
         # Remove 'Stop' action - ghosts should always move
-        # Do this BEFORE reverse-direction check so we can properly detect dead-ends
-        if 'Stop' in possibleActions:
+        # But only if there are other actions available
+        if 'Stop' in possibleActions and len( possibleActions ) > 1:
             possibleActions.remove( 'Stop' )
         
         # Remove reverse direction only if ghost has other options
@@ -401,7 +401,7 @@ class GhostRules:
         return possibleActions
     getLegalActions = staticmethod( getLegalActions )
 
-    def applyAction( state, action, ghostIndex):
+    def applyAction(state, action, ghostIndex):
 
         legal = GhostRules.getLegalActions( state, ghostIndex )
         if action not in legal:

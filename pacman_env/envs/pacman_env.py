@@ -253,6 +253,7 @@ class PacmanEnv(gymnasium.Env):
 
     def step(self, action):
         if self.terminated or self.truncated:
+            print("Warning: step() called after episode has terminated or truncated. Returning last observation.")
             self.step_counter += 1
             obs = self._get_obs() if self.use_dict_obs else np.zeros(self.observation_space.shape, dtype=np.uint8)
             info = self._get_info()
@@ -289,7 +290,6 @@ class PacmanEnv(gymnasium.Env):
         
         self.step_counter += 1
         
-        self.truncated = False
         if self.step_counter >= MAX_EP_LENGTH:
             self.truncated = True
 

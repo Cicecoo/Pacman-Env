@@ -17,5 +17,11 @@ while True:
         i += 1
         action = env.action_space.sample() # 随机采样一个动作
         obs, reward, terminated, truncated, info = env.step(action)
+        if terminated:
+            print("Episode Terminated after {} timesteps".format(i+1))
+            break
+        if truncated:
+            print("Episode Truncated after {} timesteps".format(i+1))
+            break
         env.render()
         

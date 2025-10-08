@@ -3,7 +3,7 @@ from gymnasium import spaces
 from gymnasium.utils import seeding
 import numpy as np
 
-from .ucb_pacman.graphicsDisplay import PacmanGraphics, DEFAULT_GRID_SIZE
+from .ucb_pacman.graphicsDisplay import PacmanGraphics, NullDisplay, DEFAULT_GRID_SIZE
 from .ucb_pacman.game import Actions
 from .ucb_pacman.pacman import ClassicGameRules
 from .ucb_pacman.layout import getLayout, getRandomLayout
@@ -16,13 +16,10 @@ import json
 import os
 
 
-MAX_GHOSTS = 5
-
 PACMAN_ACTIONS = ['North', 'South', 'East', 'West', 'Stop']
 
 PACMAN_DIRECTIONS = ['North', 'South', 'East', 'West']
 
-MAX_EP_LENGTH = 100
 
 # Load layout params (best-effort, fall back to empty dict if missing)
 try:
@@ -41,18 +38,22 @@ class PacmanEnv(gymnasium.Env):
 
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, use_dict_obs=True, max_ghosts=MAX_GHOSTS):
+    def __init__(self, render_mode=None, use_dict_obs=True, max_ghosts=5, use_graphics=True, episode_length=100):
         """Initialize the Pacman environment.
         
         Args:
             render_mode: One of ["human", "rgb_array"] or None
             use_dict_obs: If True, use Dict observation space; if False, use image only
             max_ghosts: Maximum number of ghosts in the game
+            use_graphics: If False, disable graphics rendering (faster, avoids Ghostscript issues)
         """
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
         self.use_dict_obs = use_dict_obs
         self.max_ghosts = max_ghosts
+        self.use_graphics = use_graphics
+        
+        self.episode_length = episode_length
         
         # Action space: 5 actions (North, South, East, West, Stop)
         self.action_space = spaces.Discrete(len(PACMAN_ACTIONS))
@@ -69,8 +70,12 @@ class PacmanEnv(gymnasium.Env):
             "image": spaces.Box(low=0, high=255, shape=(84, 84, 3), dtype=np.uint8),  # Visual observation
         })
         
+        # Initialize display - use NullDisplay when graphics are disabled
+        if self.use_graphics:
+            self.display = PacmanGraphics(1.0)
+        else:
+            self.display = NullDisplay()
         
-        self.display = PacmanGraphics(1.0)
         self.location = None
         self.viewer = None
         
@@ -198,6 +203,7 @@ class PacmanEnv(gymnasium.Env):
 
         self.step_counter = 0
         self.cumulative_reward = 0
+        self.illegal_move_counter = 0
 
         self.terminated = False  # ← CRITICAL: Reset terminated flag
         self.truncated = False   # ← CRITICAL: Reset truncated flag
@@ -205,7 +211,7 @@ class PacmanEnv(gymnasium.Env):
         self._update_observation_space()
 
         # we don't want super powerful ghosts
-        self.ghosts = [DirectionalGhost( i+1, prob_attack=0.2, prob_scaredFlee=0.2) for i in range(MAX_GHOSTS)]
+        self.ghosts = [DirectionalGhost( i+1, prob_attack=0.2, prob_scaredFlee=0.2) for i in range(self.max_ghosts)]
 
         # this agent is just a placeholder for graphics to work
         self.pacman = OpenAIAgent()
@@ -218,8 +224,10 @@ class PacmanEnv(gymnasium.Env):
 
         self.game.init()
 
-        self.display.initialize(self.game.state.data)
-        self.display.updateView()
+        # Update display only if graphics are enabled
+        if self.use_graphics and self.display is not None:
+            self.display.initialize(self.game.state.data)
+            self.display.updateView()
 
         self.location = self.game.state.data.agentStates[0].getPosition()
         self.ghostLocations = [a.getPosition() for a in self.game.state.data.agentStates[1:]]
@@ -228,9 +236,7 @@ class PacmanEnv(gymnasium.Env):
         self.location_history = [self.location]
         self.orientation = PACMAN_DIRECTIONS.index(self.game.state.data.agentStates[0].getDirection())
         self.orientation_history = [self.orientation]
-        self.illegal_move_counter = 0
-
-        self.cumulative_reward = 0
+        
 
         info = {
             'past_loc': [self.location_history[-1]],
@@ -251,6 +257,29 @@ class PacmanEnv(gymnasium.Env):
         
         return observation, info
 
+    def get_legal_actions(self):
+        """
+        获取当前状态下的合法动作列表（索引）
+        
+        Returns:
+            list: 合法动作的索引列表，例如 [0, 2, 3, 4] 表示 North, East, West, Stop 合法
+        """
+        legal_actions_str = self.game.state.getLegalPacmanActions()
+        legal_actions_idx = [PACMAN_ACTIONS.index(a) for a in legal_actions_str]
+        return legal_actions_idx
+    
+    def action_masks(self):
+        """
+        返回动作掩码
+        
+        Returns:
+            np.ndarray: 长度为 action_space_size 的数组，1 表示合法，0 表示非法
+        """
+        mask = np.zeros(len(PACMAN_ACTIONS), dtype=np.int8)
+        legal_actions = self.get_legal_actions()
+        mask[legal_actions] = 1
+        return mask
+    
     def step(self, action):
         if self.terminated or self.truncated:
             print("Warning: step() called after episode has terminated or truncated. Returning last observation.")
@@ -259,20 +288,10 @@ class PacmanEnv(gymnasium.Env):
             info = self._get_info()
             return obs, 0.0, True, False, info
 
+        # 直接执行动作，不再检查是否合法（由 Agent 负责）
         pacman_action = PACMAN_ACTIONS[action]
-
-        legal_actions = self.game.state.getLegalPacmanActions()
-        illegal_action = False
-        if pacman_action not in legal_actions:
-            self.illegal_move_counter += 1
-            illegal_action = True
-            pacman_action = 'Stop' # Stop is always legal
-
         reward = self.game.step(pacman_action)
         self.cumulative_reward += reward
-        # reward shaping for illegal actions
-        if illegal_action:
-            reward -= 10
 
         self.terminated = self.game.state.isWin() or self.game.state.isLose()
 
@@ -289,8 +308,8 @@ class PacmanEnv(gymnasium.Env):
                                  for g in self.ghostLocations])
         
         self.step_counter += 1
-        
-        if self.step_counter >= MAX_EP_LENGTH:
+
+        if self.step_counter >= self.episode_length:
             self.truncated = True
 
         observation = self._get_obs()
@@ -305,6 +324,10 @@ class PacmanEnv(gymnasium.Env):
         return PACMAN_ACTIONS
 
     def _get_image(self, image_sz=(84, 84)):
+        # Return blank image if graphics are disabled
+        if not self.use_graphics or self.display is None:
+            return np.zeros((*image_sz, 3), dtype=np.uint8)
+        
         image = self.display.image
         w, h = image.size
         grid_size_x = w / float(self.layout.width)
@@ -334,10 +357,11 @@ class PacmanEnv(gymnasium.Env):
     def close(self):
         if self.viewer is not None:
             self.viewer.close()
-        try:
-            self.display.finish()
-        except Exception:
-            pass
+        if self.use_graphics and self.display is not None:
+            try:
+                self.display.finish()
+            except Exception:
+                pass
 
     def __del__(self):
         self.close()

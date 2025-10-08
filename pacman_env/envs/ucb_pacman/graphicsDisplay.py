@@ -23,6 +23,40 @@ from .game import Directions
 # Most code by Dan Klein and John Denero written or rewritten for cs188, UC Berkeley.
 # Some code from a Pacman implementation by LiveWires, and used / modified with permission.
 
+###########################
+#  NULL DISPLAY (NO GUI)  #
+###########################
+
+class NullDisplay:
+    """
+    A null display class that implements the same interface as PacmanGraphics
+    but doesn't actually display anything. This allows running the game without
+    graphics for faster training and to avoid Ghostscript/Tkinter issues.
+    """
+    def __init__(self, zoom=1.0, frameTime=0.0, capture=False):
+        """Initialize null display (no actual graphics)."""
+        pass
+    
+    def initialize(self, state, isBlue=False):
+        """Initialize display (does nothing)."""
+        pass
+    
+    def update(self, newState):
+        """Update display (does nothing)."""
+        pass
+    
+    def updateView(self):
+        """Update view (does nothing)."""
+        pass
+    
+    def finish(self):
+        """Finish display (does nothing)."""
+        pass
+    
+    def checkNullDisplay(self):
+        """Return True to indicate this is a null display."""
+        return True
+
 DEFAULT_GRID_SIZE = 30.0
 INFO_PANE_HEIGHT = 40
 BACKGROUND_COLOR = formatColor(0,0,0)

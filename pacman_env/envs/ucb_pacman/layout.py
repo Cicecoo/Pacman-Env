@@ -134,7 +134,7 @@ class Layout:
             self.numGhosts += 1
 
 def getLayout(name, back = 0):
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..')
     if name.endswith('.lay'):
         layout = tryToLoad(path + '/layouts/' + name)
         if layout == None: layout = tryToLoad(name)

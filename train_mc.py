@@ -19,7 +19,7 @@ from agents.mc_agent import MCAgent
 
 
 def train_agent(
-    num_episodes: int = 1000,
+    num_episodes: int = 10000,
     max_steps: int = 100,
     save_every: int = 100,
     model_path: str = "model/mc_agent.pkl",
@@ -48,8 +48,8 @@ def train_agent(
     agent = MCAgent(
         action_space_size=5,
         gamma=0.99,
-        epsilon=1.0,  # Start with high exploration
-        epsilon_decay=0.995,
+        epsilon=0.2,  # Start with high exploration
+        epsilon_decay=1.0, #0.995,
         epsilon_min=0.01,
         learning_rate=0.1
     )
@@ -345,6 +345,7 @@ def main():
     # args.layout = 'mediumClassic_noGhosts.lay'
     args.layout = 'smallClassic.lay'
     args.max_steps = 1000
+    args.episodes = 10000
 
     
     if args.mode == 'train':

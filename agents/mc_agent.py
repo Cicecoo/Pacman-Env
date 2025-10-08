@@ -70,91 +70,167 @@ class MCAgent:
         self.episodes_trained = 0
         self.total_steps = 0
         
-    def extract_features(self, obs: Dict) -> Tuple:
-        """
-        Extract key features from observation for state representation.
+    # def extract_features(self, obs: Dict) -> Tuple:
+    #     """
+    #     Extract key features from observation for state representation.
         
-        This is crucial for generalization - we can't store Q-values for
-        every possible game state, so we extract important features.
+    #     This is crucial for generalization - we can't store Q-values for
+    #     every possible game state, so we extract important features.
         
-        Args:
-            obs: Dictionary observation from environment
+    #     Args:
+    #         obs: Dictionary observation from environment
             
-        Returns:
-            Tuple of features representing the state
-        """
-        # Agent position (discretized)
+    #     Returns:
+    #         Tuple of features representing the state
+    #     """
+    #     # Agent position (discretized)
+    #     agent_x, agent_y = int(obs['agent'][0]), int(obs['agent'][1])
+        
+    #     # Agent direction
+    #     agent_dir = int(obs['agent_direction'])
+        
+    #     # Number of food pellets remaining
+    #     food_count = int(np.sum(obs['food']))
+        
+    #     # Closest ghost information
+    #     ghosts = obs['ghosts']
+    #     agent_pos = obs['agent']
+        
+    #     if len(ghosts) > 0 and not np.all(ghosts == 0):
+    #         # Find non-zero ghost positions
+    #         valid_ghosts = ghosts[~np.all(ghosts == 0, axis=1)]
+    #         if len(valid_ghosts) > 0:
+    #             # Distance to nearest ghost
+    #             distances = np.linalg.norm(valid_ghosts - agent_pos, axis=1)
+    #             min_dist = int(np.min(distances))
+                
+    #             # Direction to nearest ghost (simplified to 4 directions)
+    #             nearest_ghost_idx = np.argmin(distances)
+    #             nearest_ghost = valid_ghosts[nearest_ghost_idx]
+    #             dx = nearest_ghost[0] - agent_pos[0]
+    #             dy = nearest_ghost[1] - agent_pos[1]
+                
+    #             if abs(dx) > abs(dy):
+    #                 ghost_dir = 2 if dx > 0 else 3  # East or West
+    #             else:
+    #                 ghost_dir = 0 if dy > 0 else 1  # North or South
+    #         else:
+    #             min_dist = 99
+    #             ghost_dir = -1
+    #     else:
+    #         min_dist = 99
+    #         ghost_dir = -1
+        
+    #     # Discretize ghost distance into bins
+    #     if min_dist <= 2:
+    #         dist_bin = 0  # Very close
+    #     elif min_dist <= 4:
+    #         dist_bin = 1  # Close
+    #     elif min_dist <= 7:
+    #         dist_bin = 2  # Medium
+    #     else:
+    #         dist_bin = 3  # Far
+        
+    #     # Any ghosts scared?
+    #     any_scared = int(np.any(obs['ghost_scared']))
+        
+    #     # Food in adjacent cells (4-directional)
+    #     food_grid = obs['food']
+    #     food_nearby = 0
+    #     # Ensure indices are within bounds
+    #     if agent_x > 0 and agent_x < food_grid.shape[0] and agent_y >= 0 and agent_y < food_grid.shape[1]:
+    #         if food_grid[agent_x - 1, agent_y]:
+    #             food_nearby |= 1  # West
+    #     if agent_x >= 0 and agent_x < food_grid.shape[0] - 1 and agent_y >= 0 and agent_y < food_grid.shape[1]:
+    #         if food_grid[agent_x + 1, agent_y]:
+    #             food_nearby |= 2  # East
+    #     if agent_x >= 0 and agent_x < food_grid.shape[0] and agent_y > 0 and agent_y < food_grid.shape[1]:
+    #         if food_grid[agent_x, agent_y - 1]:
+    #             food_nearby |= 4  # South
+    #     if agent_x >= 0 and agent_x < food_grid.shape[0] and agent_y >= 0 and agent_y < food_grid.shape[1] - 1:
+    #         if food_grid[agent_x, agent_y + 1]:
+    #             food_nearby |= 8  # North
+        
+    #     # Walls in adjacent cells
+    #     walls = obs['walls']
+    #     walls_nearby = 0
+    #     # Ensure indices are within bounds
+    #     if agent_x > 0 and agent_x < walls.shape[0] and agent_y >= 0 and agent_y < walls.shape[1]:
+    #         if walls[agent_x - 1, agent_y]:
+    #             walls_nearby |= 1
+    #     if agent_x >= 0 and agent_x < walls.shape[0] - 1 and agent_y >= 0 and agent_y < walls.shape[1]:
+    #         if walls[agent_x + 1, agent_y]:
+    #             walls_nearby |= 2
+    #     if agent_x >= 0 and agent_x < walls.shape[0] and agent_y > 0 and agent_y < walls.shape[1]:
+    #         if walls[agent_x, agent_y - 1]:
+    #             walls_nearby |= 4
+    #     if agent_x >= 0 and agent_x < walls.shape[0] and agent_y >= 0 and agent_y < walls.shape[1] - 1:
+    #         if walls[agent_x, agent_y + 1]:
+    #             walls_nearby |= 8
+        
+    #     # Return feature tuple
+    #     features = (
+    #         agent_dir,
+    #         dist_bin,
+    #         ghost_dir,
+    #         any_scared,
+    #         food_nearby,
+    #         walls_nearby,
+    #         min(food_count, 10)  # Cap food count for discretization
+    #     )
+        
+    #     return features
+
+    def extract_features(self, obs: Dict) -> Tuple:
+        # 与最近的食物的相对位置
         agent_x, agent_y = int(obs['agent'][0]), int(obs['agent'][1])
-        
-        # Agent direction
-        agent_dir = int(obs['agent_direction'])
-        
-        # Number of food pellets remaining
-        food_count = int(np.sum(obs['food']))
-        
-        # Closest ghost information
+        food_grid = obs['food']
+        food_positions = np.argwhere(food_grid > 0)
+        # 游戏没有结束则必有食物
+        nearest_food = food_positions[np.argmin(np.linalg.norm(food_positions - obs['agent'], axis=1))]
+        food_dx = int(nearest_food[0]) - agent_x
+        food_dy = int(nearest_food[1]) - agent_y
+
+        # # 与最近的鬼的相对位置
+        # ghosts = obs['ghosts']
+        # valid_ghosts = ghosts[~np.all(ghosts == 0, axis=1)]
+        # if len(valid_ghosts) > 0:
+        #     nearest_ghost = valid_ghosts[np.argmin(np.linalg.norm(valid_ghosts - obs['agent'], axis=1))]
+        #     ghost_dx = int(nearest_ghost[0]) - agent_x
+        #     ghost_dy = int(nearest_ghost[1]) - agent_y
+        #     ghost_dist = int(np.linalg.norm(nearest_ghost - obs['agent']))  
+        # else:
+        #     ghost_dx, ghost_dy, ghost_dist = 0, 0, 99  # No ghosts
+        # # 鬼是否被吓跑
+        # any_scared = int(np.any(obs['ghost_scared']))
+
+        # 与最近的未被吓跑的鬼的相对位置
         ghosts = obs['ghosts']
-        agent_pos = obs['agent']
-        
-        if len(ghosts) > 0 and not np.all(ghosts == 0):
-            # Find non-zero ghost positions
-            valid_ghosts = ghosts[~np.all(ghosts == 0, axis=1)]
-            if len(valid_ghosts) > 0:
-                # Distance to nearest ghost
-                distances = np.linalg.norm(valid_ghosts - agent_pos, axis=1)
-                min_dist = int(np.min(distances))
-                
-                # Direction to nearest ghost (simplified to 4 directions)
-                nearest_ghost_idx = np.argmin(distances)
-                nearest_ghost = valid_ghosts[nearest_ghost_idx]
-                dx = nearest_ghost[0] - agent_pos[0]
-                dy = nearest_ghost[1] - agent_pos[1]
-                
-                if abs(dx) > abs(dy):
-                    ghost_dir = 2 if dx > 0 else 3  # East or West
-                else:
-                    ghost_dir = 0 if dy > 0 else 1  # North or South
-            else:
-                min_dist = 99
-                ghost_dir = -1
+        ghost_scared = obs['ghost_scared']
+        valid_ghosts = ghosts[(~np.all(ghosts == 0, axis=1)) & (ghost_scared == 0)]
+        if len(valid_ghosts) > 0:
+            nearest_ghost = valid_ghosts[np.argmin(np.linalg.norm(valid_ghosts - obs['agent'], axis=1))]
+            ghost_dx = int(nearest_ghost[0]) - agent_x
+            ghost_dy = int(nearest_ghost[1]) - agent_y
+            ghost_dist = int(np.linalg.norm(nearest_ghost - obs['agent']))      
         else:
-            min_dist = 99
-            ghost_dir = -1
-        
-        # Discretize ghost distance into bins
-        if min_dist <= 2:
-            dist_bin = 0  # Very close
-        elif min_dist <= 4:
-            dist_bin = 1  # Close
-        elif min_dist <= 7:
-            dist_bin = 2  # Medium
+            ghost_dx, ghost_dy, ghost_dist = 0, 0, 99  # No non-scared ghosts
+
+        # 与最近的被吓跑的鬼的相对位置
+        scared_ghosts = ghosts[(~np.all(ghosts == 0, axis=1)) & (ghost_scared > 0)]
+        if len(scared_ghosts) > 0:
+            nearest_scared_ghost = scared_ghosts[np.argmin(np.linalg.norm(scared_ghosts - obs['agent'], axis=1))]
+            scared_ghost_dx = int(nearest_scared_ghost[0]) - agent_x
+            scared_ghost_dy = int(nearest_scared_ghost[1]) - agent_y
+            scared_ghost_dist = int(np.linalg.norm(nearest_scared_ghost - obs['agent']))
         else:
-            dist_bin = 3  # Far
-        
-        # Any ghosts scared?
+            scared_ghost_dx, scared_ghost_dy, scared_ghost_dist = 0, 0, 99  # No scared ghosts
+        # 存在被吓跑的鬼
         any_scared = int(np.any(obs['ghost_scared']))
         
-        # Food in adjacent cells (4-directional)
-        food_grid = obs['food']
-        food_nearby = 0
-        # Ensure indices are within bounds
-        if agent_x > 0 and agent_x < food_grid.shape[0] and agent_y >= 0 and agent_y < food_grid.shape[1]:
-            if food_grid[agent_x - 1, agent_y]:
-                food_nearby |= 1  # West
-        if agent_x >= 0 and agent_x < food_grid.shape[0] - 1 and agent_y >= 0 and agent_y < food_grid.shape[1]:
-            if food_grid[agent_x + 1, agent_y]:
-                food_nearby |= 2  # East
-        if agent_x >= 0 and agent_x < food_grid.shape[0] and agent_y > 0 and agent_y < food_grid.shape[1]:
-            if food_grid[agent_x, agent_y - 1]:
-                food_nearby |= 4  # South
-        if agent_x >= 0 and agent_x < food_grid.shape[0] and agent_y >= 0 and agent_y < food_grid.shape[1] - 1:
-            if food_grid[agent_x, agent_y + 1]:
-                food_nearby |= 8  # North
-        
-        # Walls in adjacent cells
+        # 墙壁信息
         walls = obs['walls']
         walls_nearby = 0
-        # Ensure indices are within bounds
         if agent_x > 0 and agent_x < walls.shape[0] and agent_y >= 0 and agent_y < walls.shape[1]:
             if walls[agent_x - 1, agent_y]:
                 walls_nearby |= 1
@@ -167,19 +243,20 @@ class MCAgent:
         if agent_x >= 0 and agent_x < walls.shape[0] and agent_y >= 0 and agent_y < walls.shape[1] - 1:
             if walls[agent_x, agent_y + 1]:
                 walls_nearby |= 8
-        
-        # Return feature tuple
+
         features = (
-            agent_dir,
-            dist_bin,
-            ghost_dir,
+            food_dx,
+            food_dy,
+            ghost_dx,
+            ghost_dy,
+            scared_ghost_dx,
+            scared_ghost_dy,
             any_scared,
-            food_nearby,
             walls_nearby,
-            min(food_count, 10)  # Cap food count for discretization
         )
-        
+
         return features
+
     
     def select_action(self, obs: Dict, legal_actions: List[int] = None) -> int:
         """
@@ -253,30 +330,51 @@ class MCAgent:
         returns_list.reverse()
         
         # First-visit MC: update Q-values
-        visited = set()
+        # visited = set()
         
+        # for state, action, G in returns_list:
+        #     sa_pair = (state, action)
+            
+        #     if sa_pair not in visited:
+        #         visited.add(sa_pair)
+                
+        #         # Store return
+        #         self.returns[sa_pair].append(G)
+                
+        #         # Update Q-value (average of all returns)
+        #         # Incremental update for efficiency
+        #         self.visit_counts[state][action] += 1
+        #         n = self.visit_counts[state][action]
+                
+        #         # Incremental mean: Q_new = Q_old + (G - Q_old) / n
+        #         # Or with learning rate: Q_new = Q_old + alpha * (G - Q_old)
+        #         if self.learning_rate is not None:
+        #             alpha = self.learning_rate
+        #         else:
+        #             alpha = 1.0 / n
+                
+        #         self.Q[state][action] += alpha * (G - self.Q[state][action])
+
+        # 改为 every-visit MC
         for state, action, G in returns_list:
             sa_pair = (state, action)
-            
-            if sa_pair not in visited:
-                visited.add(sa_pair)
                 
-                # Store return
-                self.returns[sa_pair].append(G)
+            # Store return
+            self.returns[sa_pair].append(G)
                 
-                # Update Q-value (average of all returns)
-                # Incremental update for efficiency
-                self.visit_counts[state][action] += 1
-                n = self.visit_counts[state][action]
+            # Update Q-value (average of all returns)
+            # Incremental update for efficiency
+            self.visit_counts[state][action] += 1
+            n = self.visit_counts[state][action]
                 
-                # Incremental mean: Q_new = Q_old + (G - Q_old) / n
-                # Or with learning rate: Q_new = Q_old + alpha * (G - Q_old)
-                if self.learning_rate is not None:
-                    alpha = self.learning_rate
-                else:
-                    alpha = 1.0 / n
+            # Incremental mean: Q_new = Q_old + (G - Q_old) / n
+            # Or with learning rate: Q_new = Q_old + alpha * (G - Q_old)
+            if self.learning_rate is not None:
+                alpha = self.learning_rate
+            else:
+                alpha = 1.0 / n
                 
-                self.Q[state][action] += alpha * (G - self.Q[state][action])
+            self.Q[state][action] += alpha * (G - self.Q[state][action])
         
         # Clear episode buffer
         self.episode_buffer = []

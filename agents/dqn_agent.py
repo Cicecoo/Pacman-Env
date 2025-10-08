@@ -1,8 +1,3 @@
-"""
-DQN Agent for Pacman Environment
-使用整张地图的坐标信息作为输入，解决输入尺寸一致性问题
-"""
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,181 +6,6 @@ from collections import deque
 import random
 import pickle
 from pathlib import Path
-
-
-class FixedSizeStateEncoder:
-    """
-    将可变大小的地图状态编码为固定大小的特征向量
-    
-    策略：
-    1. 墙壁：使用网格表示（固定最大尺寸）或归一化坐标
-    2. 食物：使用固定数量的最近食物坐标 + 总数
-    3. Ghost：固定最大数量（填充或截断）
-    4. Capsule：固定最大数量（填充或截断）
-    """
-    
-    def __init__(self, 
-                 max_map_size=20,       # 最大地图尺寸
-                 max_ghosts=5,          # 最大Ghost数量
-                 max_capsules=10,       # 最大Capsule数量
-                 top_k_foods=10,        # 使用最近的K个食物
-                 use_grid_encoding=True # 是否使用网格编码（否则只用坐标）
-                 ):
-        self.max_map_size = max_map_size
-        self.max_ghosts = max_ghosts
-        self.max_capsules = max_capsules
-        self.top_k_foods = top_k_foods
-        self.use_grid_encoding = use_grid_encoding
-        
-        # 计算特征维度
-        self.feature_dim = self._calculate_feature_dim()
-    
-    def _calculate_feature_dim(self):
-        """计算固定的特征向量维度"""
-        dim = 0
-        
-        # 1. Agent信息：位置(2) + 方向(1) = 3
-        dim += 3
-        
-        # 2. Ghost信息：每个Ghost有位置(2) + scared状态(1) = 3
-        dim += self.max_ghosts * 3
-        
-        # 3. Capsule信息：每个Capsule位置(2)
-        dim += self.max_capsules * 2
-        
-        # 4. 食物信息：最近K个食物位置(2*K) + 总食物数(1)
-        dim += self.top_k_foods * 2 + 1
-        
-        # 5. 地图尺寸信息：宽(1) + 高(1)
-        dim += 2
-        
-        # 6. 可选：墙壁网格编码
-        if self.use_grid_encoding:
-            # 使用压缩的网格表示（max_map_size x max_map_size）
-            dim += self.max_map_size * self.max_map_size
-        
-        return dim
-    
-    def encode(self, obs_dict):
-        """
-        将字典观测编码为固定大小的特征向量
-        
-        Args:
-            obs_dict: 环境返回的字典观测
-            {
-                "agent": [x, y],
-                "agent_direction": direction_idx,
-                "ghosts": [[x1, y1], [x2, y2], ...],
-                "ghost_scared": [0, 1, ...],
-                "food": food_grid (width, height),
-                "capsules": [[x1, y1], ...],
-                "walls": walls_grid (width, height)
-            }
-        
-        Returns:
-            固定大小的特征向量 (feature_dim,)
-        """
-        features = []
-        
-        # 获取地图尺寸用于归一化
-        map_width, map_height = obs_dict["food"].shape
-        
-        # 1. Agent信息（归一化到[0,1]）
-        agent_pos = obs_dict["agent"]
-        agent_x_norm = agent_pos[0] / max(map_width, 1)
-        agent_y_norm = agent_pos[1] / max(map_height, 1)
-        agent_dir = obs_dict["agent_direction"] / 3.0  # 方向索引归一化
-        features.extend([agent_x_norm, agent_y_norm, agent_dir])
-        
-        # 2. Ghost信息（归一化并填充/截断）
-        ghosts = obs_dict["ghosts"]
-        ghost_scared = obs_dict["ghost_scared"]
-        
-        for i in range(self.max_ghosts):
-            if i < len(ghosts):
-                ghost_x_norm = ghosts[i][0] / max(map_width, 1)
-                ghost_y_norm = ghosts[i][1] / max(map_height, 1)
-                scared = float(ghost_scared[i])
-                features.extend([ghost_x_norm, ghost_y_norm, scared])
-            else:
-                # 填充：用(-1, -1, 0)表示不存在的Ghost
-                features.extend([-1.0, -1.0, 0.0])
-        
-        # 3. Capsule信息（归一化并填充/截断）
-        capsules = obs_dict["capsules"]
-        # 过滤掉零坐标（填充的capsule）
-        valid_capsules = [cap for cap in capsules if not (cap[0] == 0 and cap[1] == 0)]
-        
-        for i in range(self.max_capsules):
-            if i < len(valid_capsules):
-                cap_x_norm = valid_capsules[i][0] / max(map_width, 1)
-                cap_y_norm = valid_capsules[i][1] / max(map_height, 1)
-                features.extend([cap_x_norm, cap_y_norm])
-            else:
-                # 填充：用(-1, -1)表示不存在的Capsule
-                features.extend([-1.0, -1.0])
-        
-        # 4. 食物信息（最近的K个食物 + 总数）
-        food_grid = obs_dict["food"]
-        food_positions = np.argwhere(food_grid > 0)  # 获取所有食物坐标
-        total_food = len(food_positions)
-        
-        if total_food > 0:
-            # 计算到agent的距离
-            distances = np.linalg.norm(food_positions - agent_pos, axis=1)
-            # 获取最近的K个
-            sorted_indices = np.argsort(distances)[:self.top_k_foods]
-            nearest_foods = food_positions[sorted_indices]
-            
-            for i in range(self.top_k_foods):
-                if i < len(nearest_foods):
-                    food_x_norm = nearest_foods[i][0] / max(map_width, 1)
-                    food_y_norm = nearest_foods[i][1] / max(map_height, 1)
-                    features.extend([food_x_norm, food_y_norm])
-                else:
-                    features.extend([-1.0, -1.0])
-        else:
-            # 没有食物，全部填充
-            features.extend([-1.0, -1.0] * self.top_k_foods)
-        
-        # 食物总数（归一化）
-        features.append(total_food / 100.0)  # 假设最多100个食物
-        
-        # 5. 地图尺寸信息（归一化）
-        features.append(map_width / self.max_map_size)
-        features.append(map_height / self.max_map_size)
-        
-        # 6. 墙壁信息（可选的网格编码）
-        if self.use_grid_encoding:
-            walls_grid = obs_dict["walls"]
-            # 调整大小到固定尺寸
-            walls_resized = self._resize_grid(walls_grid, 
-                                              (self.max_map_size, self.max_map_size))
-            features.extend(walls_resized.flatten().tolist())
-        
-        return np.array(features, dtype=np.float32)
-    
-    def _resize_grid(self, grid, target_shape):
-        """
-        将网格调整到目标大小
-        
-        策略：
-        - 如果原始网格小于目标，则填充0
-        - 如果原始网格大于目标，则裁剪或采样
-        """
-        current_shape = grid.shape
-        target_h, target_w = target_shape
-        
-        if current_shape[0] <= target_h and current_shape[1] <= target_w:
-            # 填充
-            padded = np.zeros(target_shape, dtype=grid.dtype)
-            padded[:current_shape[0], :current_shape[1]] = grid
-            return padded
-        else:
-            # 采样（简单裁剪中心区域）
-            start_h = max(0, (current_shape[0] - target_h) // 2)
-            start_w = max(0, (current_shape[1] - target_w) // 2)
-            return grid[start_h:start_h+target_h, start_w:start_w+target_w]
 
 
 class DQN(nn.Module):
@@ -232,11 +52,7 @@ class DQNAgent:
     
     def __init__(self,
                  action_space_size=5,
-                 max_map_size=20,
-                 max_ghosts=5,
-                 max_capsules=10,
-                 top_k_foods=10,
-                 use_grid_encoding=False,  # 默认不使用网格编码（特征更少）
+                 encoder=None,
                  hidden_dims=[256, 256],
                  learning_rate=0.001,
                  gamma=0.99,
@@ -247,35 +63,17 @@ class DQNAgent:
                  batch_size=64,
                  target_update_freq=10,
                  device=None):
-        """
-        初始化DQN Agent
-        
-        Args:
-            action_space_size: 动作空间大小（Pacman有5个动作）
-            max_map_size: 最大地图尺寸
-            max_ghosts: 最大Ghost数量
-            max_capsules: 最大Capsule数量
-            top_k_foods: 使用最近的K个食物
-            use_grid_encoding: 是否使用网格编码墙壁
-            hidden_dims: 隐藏层维度列表
-            learning_rate: 学习率
-            gamma: 折扣因子
-            epsilon_start: 初始探索率
-            epsilon_end: 最小探索率
-            epsilon_decay: 探索率衰减
-            buffer_capacity: 经验回放缓冲区容量
-            batch_size: 批次大小
-            target_update_freq: 目标网络更新频率（每N个episode）
-            device: 计算设备
-        """
         # 状态编码器
-        self.encoder = FixedSizeStateEncoder(
-            max_map_size=max_map_size,
-            max_ghosts=max_ghosts,
-            max_capsules=max_capsules,
-            top_k_foods=top_k_foods,
-            use_grid_encoding=use_grid_encoding
-        )
+        # self.encoder = FixedSizeStateEncoder(
+        #     max_map_size=max_map_size,
+        #     max_ghosts=max_ghosts,
+        #     max_capsules=max_capsules,
+        #     top_k_foods=top_k_foods,
+        #     use_grid_encoding=use_grid_encoding
+        # )
+
+        self.encoder = encoder 
+
         
         self.action_space_size = action_space_size
         self.state_dim = self.encoder.feature_dim
@@ -454,11 +252,7 @@ class DQNAgent:
             'total_steps': self.total_steps,
             'loss_history': self.loss_history,
             'encoder_config': {
-                'max_map_size': self.encoder.max_map_size,
-                'max_ghosts': self.encoder.max_ghosts,
-                'max_capsules': self.encoder.max_capsules,
-                'top_k_foods': self.encoder.top_k_foods,
-                'use_grid_encoding': self.encoder.use_grid_encoding,
+
             },
             # 保存超参数
             'hyperparameters': {

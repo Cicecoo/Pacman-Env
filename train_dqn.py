@@ -13,6 +13,16 @@ sys.path.append(str(Path(__file__).parent))
 from agents.dqn_agent import DQNAgent
 from pacman_env import PacmanEnv
 
+from agents.feature_encoders import (
+    DistanceDirectionEncoder,
+    EightDirectionEncoder,
+    CompactEncoder,
+    FixedSizeStateEncoder
+)
+
+# encoder = EightDirectionEncoder()
+encoder = CompactEncoder()
+
 # 动作名称映射
 PACMAN_ACTIONS = ['North', 'South', 'East', 'West', 'Stop']
 
@@ -67,11 +77,7 @@ def train_dqn(
     # 创建agent
     agent = DQNAgent(
         action_space_size=5,
-        max_map_size=20,
-        max_ghosts=5,
-        max_capsules=10,
-        top_k_foods=10,
-        use_grid_encoding=True,  # 不使用网格编码（训练更快）
+        encoder=encoder,
         hidden_dims=[256, 256],
         learning_rate=0.0005,
         gamma=0.99,
@@ -159,7 +165,7 @@ def train_dqn(
                 max_reward = np.max(recent_rewards)
                 min_reward = np.min(recent_rewards)
                 
-                print(f"\nEpisode {episode + 1}/{agent.episode_count + num_episodes}")
+                print(f"\nEpisode {episode + 1}/{num_episodes}")
                 print(f"  Avg Reward (last 10): {avg_reward:.1f}")
                 print(f"  Max Reward (last 10): {max_reward:.1f}")
                 print(f"  Min Reward (last 10): {min_reward:.1f}")
@@ -289,11 +295,7 @@ def evaluate_dqn(checkpoint_path, num_episodes=10, render=True, layout=None, ran
     # 创建agent并加载模型
     agent = DQNAgent(
         action_space_size=5,
-        max_map_size=20,
-        max_ghosts=5,
-        max_capsules=10,
-        top_k_foods=10,
-        use_grid_encoding=True
+        encoder=encoder,
     )
     agent.load(checkpoint_path)
     agent.eval()  # Set to evaluation mode (no exploration)
@@ -400,7 +402,7 @@ if __name__ == "__main__":
         args.layout = 'smallClassic.lay'
 
     args.max_steps = 400  # 每回合最大步数
-    args.episodes = 10000
+    args.episodes = 500
     
     if args.mode == 'train':
         train_dqn(

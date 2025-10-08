@@ -30,12 +30,6 @@ except Exception:
     layout_params = {}
 
 class PacmanEnv(gymnasium.Env):
-    """Gymnasium-style Pacman environment.
-    
-    This environment provides a Pacman game interface following the Gymnasium API.
-    Actions include 5 directions: North, South, East, West, and Stop.
-    """
-
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
     def __init__(self, render_mode=None, use_dict_obs=True, max_ghosts=5, use_graphics=True, episode_length=100):
@@ -113,7 +107,7 @@ class PacmanEnv(gymnasium.Env):
             self.layout = getLayout(chosen_layout)
 
     def _get_obs(self):
-        """Get current observation (following grid_world pattern)."""
+        """Get current observation """
         if not self.use_dict_obs:
             # Simple image-only observation
             return self._get_image()
@@ -158,7 +152,7 @@ class PacmanEnv(gymnasium.Env):
         }
 
     def _get_info(self):
-        """Get auxiliary information (following grid_world pattern)."""
+        """Get auxiliary information """
         # Calculate useful metrics
         food_left = self.game.state.getNumFood()
         capsules_left = len(self.game.state.getCapsules())

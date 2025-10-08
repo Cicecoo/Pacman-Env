@@ -189,6 +189,31 @@ class MCAgent:
         else:
             ghost_dir = 8  # 特殊值：无威胁 ghost
             danger_level = 0  # 安全：无 ghost 或都在惊吓状态
+
+        # 被吓倒的 ghost 的方向和距离
+        scared_ghosts = obs['ghosts'][obs['ghost_scared'] > 0]
+        if len(scared_ghosts) > 0:
+            scared_distances = np.linalg.norm(scared_ghosts - agent_pos, axis=1)
+            nearest_scared_idx = np.argmin(scared_distances)
+            nearest_scared_ghost = scared_ghosts[nearest_scared_idx]
+            
+            scared_dx = nearest_scared_ghost[0] - agent_x
+            scared_dy = nearest_scared_ghost[1] - agent_y
+            scared_dir = self._get_direction_8(scared_dx, scared_dy)
+
+            # 距离 信息
+            scared_distance = abs(scared_dx) + abs(scared_dy)
+            if scared_distance <= 2:
+                scared_dist_level = 0
+            elif scared_distance <= 5:
+                scared_dist_level = 1
+            elif scared_distance <= 10:
+                scared_dist_level = 2
+            else:
+                scared_dist_level = 3
+        else:
+            scared_dir = 8  # 特殊值：无吓倒的 ghost
+            scared_dist_level = 3  # 远离
         
         # ========== 4. 墙壁信息（隐含绕路信息）==========
         walls = obs['walls']
@@ -209,27 +234,19 @@ class MCAgent:
         if agent_y < walls.shape[0] - 1 and walls[agent_y + 1, agent_x]:
             walls_nearby |= 8
         
-        # ========== 5. 组合特征：优先级判断 ==========
-        # 当危险等级高时，ghost方向更重要；否则food方向更重要
-        # 这样可以帮助智能体在不同情况下做出正确决策
-        
-        if danger_level >= 2:
-            # 危险时：优先考虑ghost方向，但仍保留food信息
-            priority = 1  # 逃避模式
-        else:
-            # 安全时：优先考虑food方向
-            priority = 0  # 觅食模式
         
         features = (
             food_dir,         # 0-7 (8种) - Food 的8个方向
             ghost_dir,        # 0-8 (9种) - Ghost 的8个方向 + 无威胁
+            scared_dir,       # 0-8 (9种) - 吓倒的 Ghost 方向 + 无吓倒
             food_dist_level,  # 0-3 (4种) - 距离远近
             danger_level,     # 0-3 (4种) - 危险程度
-            priority,         # 0-1 (2种) - 行为优先级：0=觅食，1=逃避
+            scared_dist_level,# 0-3 (4种) - 吓倒的 Ghost 距离远近
+            # priority,         # 0-1 (2种) - 行为优先级：0=觅食，1=逃避
             # food_nearby,      # 0-15 (16种) - 临近格子 food 信息
             # walls_nearby      # 0-15 (16种) - 临近格子墙壁信息
         )
-        # 状态空间 = 8 × 9 × 4 × 4 × 2 = 2,304
+        # 状态空间 = 
         
         return features
 

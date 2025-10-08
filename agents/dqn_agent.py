@@ -408,7 +408,11 @@ class DQNAgent:
         self.step_count += 1
         self.total_steps += 1
         
-        return loss.item()
+        # 记录损失到历史
+        loss_value = loss.item()
+        self.loss_history.append(loss_value)
+        
+        return loss_value
     
     def train(self):
         """设置为训练模式（启用探索）"""

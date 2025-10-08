@@ -71,7 +71,7 @@ def train_dqn(
         max_ghosts=5,
         max_capsules=10,
         top_k_foods=10,
-        use_grid_encoding=False,  # 不使用网格编码（训练更快）
+        use_grid_encoding=True,  # 不使用网格编码（训练更快）
         hidden_dims=[256, 256],
         learning_rate=0.0005,
         gamma=0.99,
@@ -293,7 +293,7 @@ def evaluate_dqn(checkpoint_path, num_episodes=10, render=True, layout=None, ran
         max_ghosts=5,
         max_capsules=10,
         top_k_foods=10,
-        use_grid_encoding=False
+        use_grid_encoding=True
     )
     agent.load(checkpoint_path)
     agent.eval()  # Set to evaluation mode (no exploration)
@@ -398,12 +398,15 @@ if __name__ == "__main__":
     # 默认配置
     if args.layout is None:
         args.layout = 'smallClassic.lay'
+
+    args.max_steps = 400  # 每回合最大步数
+    args.episodes = 10000
     
     if args.mode == 'train':
         train_dqn(
             num_episodes=args.episodes,
             max_steps_per_episode=args.max_steps,
-            save_freq=50,
+            save_freq=args.episodes // 20,
             render=args.render,
             checkpoint_path=args.checkpoint,
             layout=args.layout,

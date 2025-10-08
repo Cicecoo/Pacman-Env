@@ -69,117 +69,6 @@ class MCAgent:
         # Statistics
         self.episodes_trained = 0
         self.total_steps = 0
-        
-    # def extract_features(self, obs: Dict) -> Tuple:
-    #     """
-    #     Extract key features from observation for state representation.
-        
-    #     This is crucial for generalization - we can't store Q-values for
-    #     every possible game state, so we extract important features.
-        
-    #     Args:
-    #         obs: Dictionary observation from environment
-            
-    #     Returns:
-    #         Tuple of features representing the state
-    #     """
-    #     # Agent position (discretized)
-    #     agent_x, agent_y = int(obs['agent'][0]), int(obs['agent'][1])
-        
-    #     # Agent direction
-    #     agent_dir = int(obs['agent_direction'])
-        
-    #     # Number of food pellets remaining
-    #     food_count = int(np.sum(obs['food']))
-        
-    #     # Closest ghost information
-    #     ghosts = obs['ghosts']
-    #     agent_pos = obs['agent']
-        
-    #     if len(ghosts) > 0 and not np.all(ghosts == 0):
-    #         # Find non-zero ghost positions
-    #         valid_ghosts = ghosts[~np.all(ghosts == 0, axis=1)]
-    #         if len(valid_ghosts) > 0:
-    #             # Distance to nearest ghost
-    #             distances = np.linalg.norm(valid_ghosts - agent_pos, axis=1)
-    #             min_dist = int(np.min(distances))
-                
-    #             # Direction to nearest ghost (simplified to 4 directions)
-    #             nearest_ghost_idx = np.argmin(distances)
-    #             nearest_ghost = valid_ghosts[nearest_ghost_idx]
-    #             dx = nearest_ghost[0] - agent_pos[0]
-    #             dy = nearest_ghost[1] - agent_pos[1]
-                
-    #             if abs(dx) > abs(dy):
-    #                 ghost_dir = 2 if dx > 0 else 3  # East or West
-    #             else:
-    #                 ghost_dir = 0 if dy > 0 else 1  # North or South
-    #         else:
-    #             min_dist = 99
-    #             ghost_dir = -1
-    #     else:
-    #         min_dist = 99
-    #         ghost_dir = -1
-        
-    #     # Discretize ghost distance into bins
-    #     if min_dist <= 2:
-    #         dist_bin = 0  # Very close
-    #     elif min_dist <= 4:
-    #         dist_bin = 1  # Close
-    #     elif min_dist <= 7:
-    #         dist_bin = 2  # Medium
-    #     else:
-    #         dist_bin = 3  # Far
-        
-    #     # Any ghosts scared?
-    #     any_scared = int(np.any(obs['ghost_scared']))
-        
-    #     # Food in adjacent cells (4-directional)
-    #     food_grid = obs['food']
-    #     food_nearby = 0
-    #     # Ensure indices are within bounds
-    #     if agent_x > 0 and agent_x < food_grid.shape[0] and agent_y >= 0 and agent_y < food_grid.shape[1]:
-    #         if food_grid[agent_x - 1, agent_y]:
-    #             food_nearby |= 1  # West
-    #     if agent_x >= 0 and agent_x < food_grid.shape[0] - 1 and agent_y >= 0 and agent_y < food_grid.shape[1]:
-    #         if food_grid[agent_x + 1, agent_y]:
-    #             food_nearby |= 2  # East
-    #     if agent_x >= 0 and agent_x < food_grid.shape[0] and agent_y > 0 and agent_y < food_grid.shape[1]:
-    #         if food_grid[agent_x, agent_y - 1]:
-    #             food_nearby |= 4  # South
-    #     if agent_x >= 0 and agent_x < food_grid.shape[0] and agent_y >= 0 and agent_y < food_grid.shape[1] - 1:
-    #         if food_grid[agent_x, agent_y + 1]:
-    #             food_nearby |= 8  # North
-        
-    #     # Walls in adjacent cells
-    #     walls = obs['walls']
-    #     walls_nearby = 0
-    #     # Ensure indices are within bounds
-    #     if agent_x > 0 and agent_x < walls.shape[0] and agent_y >= 0 and agent_y < walls.shape[1]:
-    #         if walls[agent_x - 1, agent_y]:
-    #             walls_nearby |= 1
-    #     if agent_x >= 0 and agent_x < walls.shape[0] - 1 and agent_y >= 0 and agent_y < walls.shape[1]:
-    #         if walls[agent_x + 1, agent_y]:
-    #             walls_nearby |= 2
-    #     if agent_x >= 0 and agent_x < walls.shape[0] and agent_y > 0 and agent_y < walls.shape[1]:
-    #         if walls[agent_x, agent_y - 1]:
-    #             walls_nearby |= 4
-    #     if agent_x >= 0 and agent_x < walls.shape[0] and agent_y >= 0 and agent_y < walls.shape[1] - 1:
-    #         if walls[agent_x, agent_y + 1]:
-    #             walls_nearby |= 8
-        
-    #     # Return feature tuple
-    #     features = (
-    #         agent_dir,
-    #         dist_bin,
-    #         ghost_dir,
-    #         any_scared,
-    #         food_nearby,
-    #         walls_nearby,
-    #         min(food_count, 10)  # Cap food count for discretization
-    #     )
-        
-    #     return features
 
     def _get_direction_8(self, dx: float, dy: float) -> int:
         """
@@ -226,21 +115,6 @@ class MCAgent:
         return direction
 
     def extract_features(self, obs: Dict) -> Tuple:
-        """
-        优化的特征提取：方向化 + 离散化
-        
-        状态空间从 5.2亿 降低到 65,536
-        
-        特征说明：
-        - food_dir: 最近 food 的方向 (8个方向)
-          0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW
-        - ghost_dir: 最近危险 ghost 的方向 (8个方向 + 1个无威胁)
-          0-7=8个方向, 8=无威胁ghost
-        - food_dist_level: 距离等级 (0=很近1-2, 1=近3-5, 2=中6-10, 3=远>10)
-        - danger_level: Ghost 危险等级 (0=安全, 1=注意, 2=警戒, 3=危险)
-        - food_nearby: 临近格子是否有 food (bit mask)
-        - walls_nearby: 临近格子是否有墙 (bit mask)
-        """
         agent_pos = obs['agent']
         agent_x, agent_y = int(agent_pos[0]), int(agent_pos[1])
         
@@ -335,15 +209,27 @@ class MCAgent:
         if agent_y < walls.shape[0] - 1 and walls[agent_y + 1, agent_x]:
             walls_nearby |= 8
         
+        # ========== 5. 组合特征：优先级判断 ==========
+        # 当危险等级高时，ghost方向更重要；否则food方向更重要
+        # 这样可以帮助智能体在不同情况下做出正确决策
+        
+        if danger_level >= 2:
+            # 危险时：优先考虑ghost方向，但仍保留food信息
+            priority = 1  # 逃避模式
+        else:
+            # 安全时：优先考虑food方向
+            priority = 0  # 觅食模式
+        
         features = (
             food_dir,         # 0-7 (8种) - Food 的8个方向
             ghost_dir,        # 0-8 (9种) - Ghost 的8个方向 + 无威胁
             food_dist_level,  # 0-3 (4种) - 距离远近
             danger_level,     # 0-3 (4种) - 危险程度
+            priority,         # 0-1 (2种) - 行为优先级：0=觅食，1=逃避
             # food_nearby,      # 0-15 (16种) - 临近格子 food 信息
             # walls_nearby      # 0-15 (16种) - 临近格子墙壁信息
         )
-        # 状态空间 = 8 × 9 × 4 × 4 = 1,152
+        # 状态空间 = 8 × 9 × 4 × 4 × 2 = 2,304
         
         return features
 

@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pacman_env.envs.pacman_env import PacmanEnv
 from agents.mc_agent import MCAgent
+# from balanced_reward_wrapper import BalancedRewardWrapper
 # import gymnasium
 # import pacman_env
 
@@ -41,15 +42,16 @@ def train_agent(
     """
     # Create environment with graphics disabled by default for training
     env = PacmanEnv(use_graphics=render, episode_length=max_steps)
+    # env = BalancedRewardWrapper(base_env)  # 使用平衡奖励包装器
     # env = ImprovedPacmanEnv(use_graphics=render, episode_length=max_steps)
     
     # Create agent
     agent = MCAgent(
         action_space_size=5,
         gamma=0.99,
-        epsilon=1.0,  # Start with high exploration
-        epsilon_decay=0.9, #0.995,
-        epsilon_min=0.1,
+        epsilon=0.3,  # 中等探索率：既能学习躲避，也能学习觅食
+        epsilon_decay=0.9995,  # 缓慢衰减：给足够时间学习两种行为
+        epsilon_min=0.05,  # 保持少量探索
         learning_rate=0.1
     )
     

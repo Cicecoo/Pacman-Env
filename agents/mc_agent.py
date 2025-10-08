@@ -181,80 +181,170 @@ class MCAgent:
         
     #     return features
 
+    def _get_direction_8(self, dx: float, dy: float) -> int:
+        """
+        将 (dx, dy) 向量编码为8个方向之一
+        
+        方向编码：
+        7(NW)  0(N)  1(NE)
+           \\   |   /
+        6(W) - @ - 2(E)
+           /   |   \\
+        5(SW)  4(S)  3(SE)
+        
+        Args:
+            dx: x方向的差值 (target_x - agent_x)
+            dy: y方向的差值 (target_y - agent_y)
+            
+        Returns:
+            方向编码 0-7
+        """
+        if dx == 0 and dy == 0:
+            return 0  # 默认返回北方
+        
+        # 使用角度来确定方向
+        # atan2 返回 [-π, π]，我们将其转换为 [0, 2π]
+        import math
+        angle = math.atan2(dy, dx)  # 注意：atan2(y, x)
+        
+        # 将角度转换为 [0, 2π]
+        if angle < 0:
+            angle += 2 * math.pi
+        
+        # 将 [0, 2π] 分成8个区域
+        # 0=N (π/2), 1=NE (π/4), 2=E (0), 3=SE (-π/4), 
+        # 4=S (-π/2), 5=SW (-3π/4), 6=W (π), 7=NW (3π/4)
+        
+        # 调整角度：从东方(0)开始，逆时针
+        # 我们需要从北方开始，顺时针
+        # 北方在 atan2 中是 π/2
+        angle = (math.pi / 2 - angle) % (2 * math.pi)
+        
+        # 分成8个区域，每个区域 π/4 (45度)
+        direction = int((angle + math.pi / 8) / (math.pi / 4)) % 8
+        
+        return direction
+
     def extract_features(self, obs: Dict) -> Tuple:
-        # 与最近的食物的相对位置
-        agent_x, agent_y = int(obs['agent'][0]), int(obs['agent'][1])
+        """
+        优化的特征提取：方向化 + 离散化
+        
+        状态空间从 5.2亿 降低到 65,536
+        
+        特征说明：
+        - food_dir: 最近 food 的方向 (8个方向)
+          0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW
+        - ghost_dir: 最近危险 ghost 的方向 (8个方向 + 1个无威胁)
+          0-7=8个方向, 8=无威胁ghost
+        - food_dist_level: 距离等级 (0=很近1-2, 1=近3-5, 2=中6-10, 3=远>10)
+        - danger_level: Ghost 危险等级 (0=安全, 1=注意, 2=警戒, 3=危险)
+        - food_nearby: 临近格子是否有 food (bit mask)
+        - walls_nearby: 临近格子是否有墙 (bit mask)
+        """
+        agent_pos = obs['agent']
+        agent_x, agent_y = int(agent_pos[0]), int(agent_pos[1])
+        
+        # ========== 1. 最近 Food 的方向和距离 ==========
         food_grid = obs['food']
         food_positions = np.argwhere(food_grid > 0)
-        # 游戏没有结束则必有食物
-        nearest_food = food_positions[np.argmin(np.linalg.norm(food_positions - obs['agent'], axis=1))]
-        food_dx = int(nearest_food[0]) - agent_x
-        food_dy = int(nearest_food[1]) - agent_y
-
-        # # 与最近的鬼的相对位置
-        # ghosts = obs['ghosts']
-        # valid_ghosts = ghosts[~np.all(ghosts == 0, axis=1)]
-        # if len(valid_ghosts) > 0:
-        #     nearest_ghost = valid_ghosts[np.argmin(np.linalg.norm(valid_ghosts - obs['agent'], axis=1))]
-        #     ghost_dx = int(nearest_ghost[0]) - agent_x
-        #     ghost_dy = int(nearest_ghost[1]) - agent_y
-        #     ghost_dist = int(np.linalg.norm(nearest_ghost - obs['agent']))  
-        # else:
-        #     ghost_dx, ghost_dy, ghost_dist = 0, 0, 99  # No ghosts
-        # # 鬼是否被吓跑
-        # any_scared = int(np.any(obs['ghost_scared']))
-
-        # 与最近的未被吓跑的鬼的相对位置
+        nearest_food = food_positions[np.argmin(np.linalg.norm(food_positions - agent_pos, axis=1))]
+        
+        food_dx = nearest_food[0] - agent_x
+        food_dy = nearest_food[1] - agent_y
+        food_distance = abs(food_dx) + abs(food_dy)  # 曼哈顿距离
+        
+        # 方向：8个方向编码
+        # 0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW
+        food_dir = self._get_direction_8(food_dx, food_dy)
+        
+        # 距离等级
+        if food_distance <= 2:
+            food_dist_level = 0
+        elif food_distance <= 5:
+            food_dist_level = 1
+        elif food_distance <= 10:
+            food_dist_level = 2
+        else:
+            food_dist_level = 3
+        
+        # ========== 2. 临近 Food 位置（立即可吃）==========
+        food_nearby = 0
+        # 注意：numpy 数组索引是 [row, col] = [y, x]
+        # food_grid.shape = (height, width)
+        # agent_y 对应 row (第1维)，agent_x 对应 col (第2维)
+        
+        # North (y+1)
+        if agent_y < food_grid.shape[0] - 1 and food_grid[agent_y + 1, agent_x]:
+            food_nearby |= 1
+        # South (y-1)
+        if agent_y > 0 and food_grid[agent_y - 1, agent_x]:
+            food_nearby |= 2
+        # East (x+1)
+        if agent_x < food_grid.shape[1] - 1 and food_grid[agent_y, agent_x + 1]:
+            food_nearby |= 4
+        # West (x-1)
+        if agent_x > 0 and food_grid[agent_y, agent_x - 1]:
+            food_nearby |= 8
+        
+        # ========== 3. Ghost 方向和危险等级 ==========
         ghosts = obs['ghosts']
         ghost_scared = obs['ghost_scared']
         valid_ghosts = ghosts[(~np.all(ghosts == 0, axis=1)) & (ghost_scared == 0)]
-        if len(valid_ghosts) > 0:
-            nearest_ghost = valid_ghosts[np.argmin(np.linalg.norm(valid_ghosts - obs['agent'], axis=1))]
-            ghost_dx = int(nearest_ghost[0]) - agent_x
-            ghost_dy = int(nearest_ghost[1]) - agent_y
-            ghost_dist = int(np.linalg.norm(nearest_ghost - obs['agent']))      
-        else:
-            ghost_dx, ghost_dy, ghost_dist = 0, 0, 99  # No non-scared ghosts
-
-        # 与最近的被吓跑的鬼的相对位置
-        scared_ghosts = ghosts[(~np.all(ghosts == 0, axis=1)) & (ghost_scared > 0)]
-        if len(scared_ghosts) > 0:
-            nearest_scared_ghost = scared_ghosts[np.argmin(np.linalg.norm(scared_ghosts - obs['agent'], axis=1))]
-            scared_ghost_dx = int(nearest_scared_ghost[0]) - agent_x
-            scared_ghost_dy = int(nearest_scared_ghost[1]) - agent_y
-            scared_ghost_dist = int(np.linalg.norm(nearest_scared_ghost - obs['agent']))
-        else:
-            scared_ghost_dx, scared_ghost_dy, scared_ghost_dist = 0, 0, 99  # No scared ghosts
-        # 存在被吓跑的鬼
-        any_scared = int(np.any(obs['ghost_scared']))
         
-        # 墙壁信息
+        if len(valid_ghosts) > 0:
+            # 找到最近的危险 ghost
+            ghost_distances = np.linalg.norm(valid_ghosts - agent_pos, axis=1)
+            nearest_ghost_idx = np.argmin(ghost_distances)
+            min_ghost_dist = ghost_distances[nearest_ghost_idx]
+            nearest_ghost = valid_ghosts[nearest_ghost_idx]
+            
+            # Ghost 方向（8方向）
+            ghost_dx = nearest_ghost[0] - agent_x
+            ghost_dy = nearest_ghost[1] - agent_y
+            ghost_dir = self._get_direction_8(ghost_dx, ghost_dy)
+            
+            # 危险等级
+            if min_ghost_dist <= 3:
+                danger_level = 3  # 危险：ghost 很近
+            elif min_ghost_dist <= 6:
+                danger_level = 2  # 警戒：ghost 接近
+            elif min_ghost_dist <= 10:
+                danger_level = 1  # 注意：ghost 在中等距离
+            else:
+                danger_level = 0  # 安全：ghost 很远
+        else:
+            ghost_dir = 8  # 特殊值：无威胁 ghost
+            danger_level = 0  # 安全：无 ghost 或都在惊吓状态
+        
+        # ========== 4. 墙壁信息（隐含绕路信息）==========
         walls = obs['walls']
         walls_nearby = 0
-        if agent_x > 0 and agent_x < walls.shape[0] and agent_y >= 0 and agent_y < walls.shape[1]:
-            if walls[agent_x - 1, agent_y]:
-                walls_nearby |= 1
-        if agent_x >= 0 and agent_x < walls.shape[0] - 1 and agent_y >= 0 and agent_y < walls.shape[1]:
-            if walls[agent_x + 1, agent_y]:
-                walls_nearby |= 2
-        if agent_x >= 0 and agent_x < walls.shape[0] and agent_y > 0 and agent_y < walls.shape[1]:
-            if walls[agent_x, agent_y - 1]:
-                walls_nearby |= 4
-        if agent_x >= 0 and agent_x < walls.shape[0] and agent_y >= 0 and agent_y < walls.shape[1] - 1:
-            if walls[agent_x, agent_y + 1]:
-                walls_nearby |= 8
-
+        # 注意：numpy 数组索引是 [row, col] = [y, x]
+        # walls.shape = (height, width)
+        
+        # West (x-1)
+        if agent_x > 0 and walls[agent_y, agent_x - 1]:
+            walls_nearby |= 1
+        # East (x+1)
+        if agent_x < walls.shape[1] - 1 and walls[agent_y, agent_x + 1]:
+            walls_nearby |= 2
+        # South (y-1)
+        if agent_y > 0 and walls[agent_y - 1, agent_x]:
+            walls_nearby |= 4
+        # North (y+1)
+        if agent_y < walls.shape[0] - 1 and walls[agent_y + 1, agent_x]:
+            walls_nearby |= 8
+        
         features = (
-            food_dx,
-            food_dy,
-            ghost_dx,
-            ghost_dy,
-            scared_ghost_dx,
-            scared_ghost_dy,
-            any_scared,
-            walls_nearby,
+            food_dir,         # 0-7 (8种) - Food 的8个方向
+            ghost_dir,        # 0-8 (9种) - Ghost 的8个方向 + 无威胁
+            food_dist_level,  # 0-3 (4种) - 距离远近
+            danger_level,     # 0-3 (4种) - 危险程度
+            # food_nearby,      # 0-15 (16种) - 临近格子 food 信息
+            # walls_nearby      # 0-15 (16种) - 临近格子墙壁信息
         )
-
+        # 状态空间 = 8 × 9 × 4 × 4 = 1,152
+        
         return features
 
     

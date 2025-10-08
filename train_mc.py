@@ -48,9 +48,9 @@ def train_agent(
     agent = MCAgent(
         action_space_size=5,
         gamma=0.99,
-        epsilon=0.2,  # Start with high exploration
-        epsilon_decay=1.0, #0.995,
-        epsilon_min=0.01,
+        epsilon=1.0,  # Start with high exploration
+        epsilon_decay=0.9, #0.995,
+        epsilon_min=0.1,
         learning_rate=0.1
     )
     
@@ -345,7 +345,7 @@ def main():
     # args.layout = 'mediumClassic_noGhosts.lay'
     args.layout = 'smallClassic.lay'
     args.max_steps = 1000
-    args.episodes = 10000
+    args.episodes = 5000
 
     
     if args.mode == 'train':

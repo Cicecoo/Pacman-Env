@@ -1,6 +1,7 @@
 __pycache__/
 copilot/
 checkpoints/
+RL_Pacman/
 
 *.pyc
 dist/

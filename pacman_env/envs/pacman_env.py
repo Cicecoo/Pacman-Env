@@ -187,11 +187,10 @@ class PacmanEnv(gymnasium.Env):
         if self.use_graphics and self.display is not None:
             self.display.initialize(self.game.state.data)
             self.display.updateView()
-
+        
 
         observation = self._get_obs()
         info = self._get_info()
-
 
         return observation, info
 

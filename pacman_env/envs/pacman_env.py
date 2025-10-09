@@ -52,7 +52,6 @@ class PacmanEnv(gymnasium.Env):
         # Action space: 5 actions (North, South, East, West, Stop)
         self.action_space = spaces.Discrete(len(PACMAN_ACTIONS))
         
-        
         self.observation_space = spaces.Dict({
             "agent": spaces.Box(low=0, high=100, shape=(2,), dtype=np.float32),  # Pacman position (x, y)
             "agent_direction": spaces.Discrete(4),  # 0=North, 1=South, 2=East, 3=West
@@ -69,12 +68,12 @@ class PacmanEnv(gymnasium.Env):
             self.display = PacmanGraphics(1.0)
         else:
             self.display = NullDisplay()
-        
-        self.location = None
+
         self.viewer = None
-        
-        self.layout = None
         self.np_random = None
+
+        self.layout = None
+        
         self.terminated = False
         self.truncated = False
 
@@ -112,9 +111,8 @@ class PacmanEnv(gymnasium.Env):
             # Simple image-only observation
             return self._get_image()
         
-        # Structured observation
         # Agent info
-        agent_pos = np.array(self.game.state.data.agentStates[0].getPosition(), dtype=np.float32)
+        agent_position = np.array(self.game.state.data.agentStates[0].getPosition(), dtype=np.float32)
         agent_direction = PACMAN_DIRECTIONS.index(self.game.state.data.agentStates[0].getDirection())
         
         # Ghost info
@@ -126,7 +124,7 @@ class PacmanEnv(gymnasium.Env):
                 ghost_scared[i] = 1 if agent_state.scaredTimer > 0 else 0
         
         # Food grid
-        food_grid = np.array(self.game.state.data.food.data, dtype=np.uint8).T
+        food = np.array(self.game.state.data.food.data, dtype=np.uint8).T
         
         # Capsules
         capsules_list = self.game.state.data.capsules
@@ -135,52 +133,24 @@ class PacmanEnv(gymnasium.Env):
             capsules[i] = cap
         
         # Walls
-        walls_grid = np.array(self.game.state.data.layout.walls.data, dtype=np.uint8).T
+        walls = np.array(self.game.state.data.layout.walls.data, dtype=np.uint8).T
         
         # Image observation
         image = self._get_image()
         
         return {
-            "agent": agent_pos,
+            "agent": agent_position,
             "agent_direction": agent_direction,
             "ghosts": ghost_positions,
             "ghost_scared": ghost_scared,
-            "food": food_grid,
+            "food": food,
             "capsules": capsules,
-            "walls": walls_grid,
+            "walls": walls,
             "image": image,
         }
 
     def _get_info(self):
-        """Get auxiliary information """
-        # Calculate useful metrics
-        food_left = self.game.state.getNumFood()
-        capsules_left = len(self.game.state.getCapsules())
-        
-        # Distance to nearest ghost
-        ghost_distances = [
-            np.linalg.norm(np.array(self.location) - np.array(g))
-            for g in self.ghostLocations
-        ]
-        min_ghost_distance = min(ghost_distances) if ghost_distances else float('inf')
-        
-        # Check if any ghost is scared
-        any_ghost_scared = any(
-            agent.scaredTimer > 0 
-            for agent in self.game.state.data.agentStates[1:]
-        )
-        
-        return {
-            "step": self.step_counter,
-            "cumulative_reward": self.cumulative_reward,
-            "food_remaining": food_left,
-            "capsules_remaining": capsules_left,
-            "illegal_moves": self.illegal_move_counter,
-            "min_ghost_distance": min_ghost_distance,
-            "any_ghost_scared": any_ghost_scared,
-            "is_win": self.game.state.isWin(),
-            "is_lose": self.game.state.isLose(),
-        }
+        return {}
 
     def reset(self, seed=None, options=None, layout=None):
         # Seed RNG using gymnasium helper
@@ -195,10 +165,7 @@ class PacmanEnv(gymnasium.Env):
         else:
             self._choose_layout(random_layout=True)
 
-        self.step_counter = 0
-        self.cumulative_reward = 0
-        self.illegal_move_counter = 0
-
+        self.steps = 0
         self.terminated = False  # ← CRITICAL: Reset terminated flag
         self.truncated = False   # ← CRITICAL: Reset truncated flag
 
@@ -206,7 +173,6 @@ class PacmanEnv(gymnasium.Env):
 
         # we don't want super powerful ghosts
         self.ghosts = [DirectionalGhost( i+1, prob_attack=0.2, prob_scaredFlee=0.2) for i in range(self.max_ghosts)]
-
         # this agent is just a placeholder for graphics to work
         self.pacman = OpenAIAgent()
 
@@ -215,7 +181,6 @@ class PacmanEnv(gymnasium.Env):
 
         self.game = self.rules.newGame(self.layout, self.pacman, self.ghosts,
             self.display, False, False)
-
         self.game.init()
 
         # Update display only if graphics are enabled
@@ -223,38 +188,16 @@ class PacmanEnv(gymnasium.Env):
             self.display.initialize(self.game.state.data)
             self.display.updateView()
 
-        self.location = self.game.state.data.agentStates[0].getPosition()
-        self.ghostLocations = [a.getPosition() for a in self.game.state.data.agentStates[1:]]
-        self.ghostInFrame = any([np.sum(np.abs(np.array(g) - np.array(self.location))) <= 2 for g in self.ghostLocations])
-
-        self.location_history = [self.location]
-        self.orientation = PACMAN_DIRECTIONS.index(self.game.state.data.agentStates[0].getDirection())
-        self.orientation_history = [self.orientation]
-        
-
-        info = {
-            'past_loc': [self.location_history[-1]],
-            'curr_loc': [self.location_history[-1]],
-            'past_orientation': [[self.orientation_history[-1]]],
-            'curr_orientation': [[self.orientation_history[-1]]],
-            'illegal_move_counter': [self.illegal_move_counter],
-            'ghost_positions': [self.ghostLocations],
-            'ghost_in_frame': [self.ghostInFrame],
-            'step_counter': [[0]],
-        }
 
         observation = self._get_obs()
         info = self._get_info()
-        
-        # if self.render_mode == 'human':
-        #     self.render()
-        
+
+
         return observation, info
 
     def get_legal_actions(self):
         """
         获取当前状态下的合法动作列表（索引）
-        
         Returns:
             list: 合法动作的索引列表，例如 [0, 2, 3, 4] 表示 North, East, West, Stop 合法
         """
@@ -264,8 +207,7 @@ class PacmanEnv(gymnasium.Env):
     
     def action_masks(self):
         """
-        返回动作掩码
-        
+        动作掩码
         Returns:
             np.ndarray: 长度为 action_space_size 的数组，1 表示合法，0 表示非法
         """
@@ -273,45 +215,27 @@ class PacmanEnv(gymnasium.Env):
         legal_actions = self.get_legal_actions()
         mask[legal_actions] = 1
         return mask
-    
+
+
     def step(self, action):
         if self.terminated or self.truncated:
             print("Warning: step() called after episode has terminated or truncated. Returning last observation.")
-            self.step_counter += 1
+            self.steps += 1
             obs = self._get_obs() if self.use_dict_obs else np.zeros(self.observation_space.shape, dtype=np.uint8)
             info = self._get_info()
             return obs, 0.0, True, False, info
 
         # 直接执行动作，不再检查是否合法（由 Agent 负责）
-        pacman_action = PACMAN_ACTIONS[action]
-        reward = self.game.step(pacman_action)
-        self.cumulative_reward += reward
-
-        self.terminated = self.game.state.isWin() or self.game.state.isLose()
-
-        self.location = self.game.state.data.agentStates[0].getPosition()
-        self.location_history.append(self.location)
-        self.ghostLocations = [a.getPosition() for a in self.game.state.data.agentStates[1:]]
-
-        self.orientation = PACMAN_DIRECTIONS.index(self.game.state.data.agentStates[0].getDirection())
-        self.orientation_history.append(self.orientation)
-
-        extent = (self.location[0] - 1, self.location[1] - 1), (self.location[0] + 1, self.location[1] + 1)
-        self.ghostInFrame = any([g[0] >= extent[0][0] and g[1] >= extent[0][1] and 
-                                 g[0] <= extent[1][0] and g[1] <= extent[1][1] 
-                                 for g in self.ghostLocations])
+        reward = self.game.step(PACMAN_ACTIONS[action])
         
-        self.step_counter += 1
+        self.steps += 1
+        self.terminated = self.game.state.isWin() or self.game.state.isLose()
+        self.truncated = self.steps >= self.episode_length
 
-        if self.step_counter >= self.episode_length:
-            self.truncated = True
 
         observation = self._get_obs()
         info = self._get_info()
         
-        if self.terminated or self.truncated:
-            info['episode'] = {'r': self.cumulative_reward, 'l': self.step_counter}
-
         return observation, reward, self.terminated, self.truncated, info
 
     def get_action_meanings(self):
@@ -322,19 +246,9 @@ class PacmanEnv(gymnasium.Env):
         if not self.use_graphics or self.display is None:
             return np.zeros((*image_sz, 3), dtype=np.uint8)
         
+        # Get the full game image and resize it
         image = self.display.image
-        w, h = image.size
-        grid_size_x = w / float(self.layout.width)
-        grid_size_y = h / float(self.layout.height)
-
-        extent = [
-            grid_size_x * (self.location[0] - 1),
-            grid_size_y * (self.layout.height - (self.location[1] + 2.2)),
-            grid_size_x * (self.location[0] + 2),
-            grid_size_y * (self.layout.height - (self.location[1] - 1.2)),
-        ]
-        extent = tuple([int(e) for e in extent])
-        image = image.crop(extent).resize(image_sz)
+        image = image.resize(image_sz)
         return np.array(image)
 
     def render(self):

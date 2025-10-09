@@ -10,7 +10,7 @@ class QLearningAgent():
       policy(s) = arg_max_{a in actions} Q(s,a)
     """
 
-    def __init__(self, alpha=1.0, epsilon=0.05, gamma=0.8):
+    def __init__(self, alpha=0.2, epsilon=0.05, gamma=0.8):
         """
         hyperparameters:
         alpha    - learning rate
@@ -76,14 +76,19 @@ class QLearningAgent():
         return random.choice(best_actions) # 随机选择一个最优动作
 
 
-    def get_action(self, state):
+    def choose_action(self, state):
         legal_actions = state.getLegalPacmanActions()
 
         # epsilon-greedy
         if random.random() < self.epsilon:
-            return random.choice(legal_actions)
+            action = random.choice(legal_actions)
         else:
-            return self.get_policy(state)
+            action = self.get_policy(state)
+        
+        # 关键：保存当前状态和动作，供observation_function使用
+        self.last_state = state 
+        self.last_action = action
+        return action
 
 
     """
@@ -100,7 +105,6 @@ class QLearningAgent():
         """
         Q(s,a) = (1-alpha)*Q(s,a) + alpha*(reward + discount * V(s'))
         """
-        
         td_target = reward + self.discount * self.get_state_value(next_state)
         td_delta = td_target - self.get_q_value(state, action)
         new_q_value = self.get_q_value(state, action) + self.alpha * td_delta
@@ -108,16 +112,17 @@ class QLearningAgent():
         self.Q_values[(state, action)] = new_q_value
 
 
-    def observe_transition(self, state, action, next_state, delta_reward):
-        """
-          Called by environment to inform agent that a transition has
-          been observed. This will result in a call to update.
-        """
-        self.update(state, action, next_state, delta_reward)
+    def observe_transition(self, state):
+        if self.last_state is not None:
+            delta_reward = state.getScore() - self.last_state.getScore()
 
-        self.last_state = next_state
-        self.last_action = action
-        self.episode_rewards += delta_reward
+            self.update(self.last_state, self.last_action, state, delta_reward)
+
+            # 应该在choose_action里更新
+            # self.last_state = state
+            # self.last_action = 还没有选出新动作
+            self.episode_rewards += delta_reward
+        return state
 
     def start_episode(self):
         """
@@ -130,16 +135,6 @@ class QLearningAgent():
     def stop_episode(self):
         self.episodes += 1
 
-
-    def observation_function(self, state):
-        """
-            This is where we ended up after our last action.
-            The simulation should somehow ensure this is called
-        """
-        if self.last_state is not None:
-            reward = state.getScore() - self.last_state.getScore()
-            self.observe_transition(self.last_state, self.last_action, state, reward)
-        return state
 
     def register_initial_state(self, state):
         self.start_episode()
@@ -156,20 +151,10 @@ class QLearningAgent():
         # 如果 last_state 不为 None，说明至少执行了一步，需要更新最后一个 transition
         if self.last_state is not None:
             delta_reward = state.getScore() - self.last_state.getScore()
-            self.observe_transition(self.last_state, self.last_action, state, delta_reward)
+            self.observe_transition(state)
         self.stop_episode()
 
 
-    def print_q_values(self):
-        """
-          For debugging purposes, you might want to print out
-          all the q-values for the agent.
-        """
-        print('----------------------------------------')   
-        for key in sorted(self.Q_values):
-            print(f"  {key}: {self.Q_values[key]}")
-        print('----------------------------------------')
-    
     def save(self, filename):
         import pickle
         with open(filename, 'wb') as f:

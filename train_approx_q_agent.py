@@ -16,8 +16,8 @@ layout = 'smallClassic.lay'
 if __name__ == "__main__":
     env = PacmanEnv(use_graphics=False)
     # agent = QLearningAgent(alpha=0.2, epsilon=0.05, gamma=0.8)
-    agent = QLearningAgent(alpha=0.2, epsilon=0.1, gamma=0.8)
-    num_episodes = 2000
+    agent = ApproximateQLearningAgent(alpha=0.2, epsilon=0.1, gamma=0.8)
+    num_episodes = 1000
 
     for episode in range(num_episodes):
         obs, info = env.reset(layout=layout)
@@ -40,7 +40,7 @@ if __name__ == "__main__":
         # print(f"Episode {episode + 1}/{num_episodes}, Total Reward: {total_reward}")
 
     print("Training completed.")
-    agent.save('q_learning_agent.pkl')
+    agent.save('approx_q_learning_agent.pkl')
 
     print("Testing the trained agent...")
     agent.set_test_mode()

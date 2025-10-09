@@ -1,6 +1,7 @@
 import random
+import pickle
 
-class QLearningAgent():
+class QLearningAgent:
     """
       ValueEstimationAgent assigns values to (state,action)
       Q-Values for an environment. As well as a value to a
@@ -156,12 +157,10 @@ class QLearningAgent():
 
 
     def save(self, filename):
-        import pickle
         with open(filename, 'wb') as f:
             pickle.dump(self.Q_values, f)
 
     def load(self, filename):
-        import pickle
         with open(filename, 'rb') as f:
             self.Q_values = pickle.load(f)
 

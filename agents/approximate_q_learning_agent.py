@@ -25,3 +25,15 @@ class ApproximateQLearningAgent(QLearningAgent):
         for f in features:
             self.weights[f] = self.weights.get(f, 0.0) + self.alpha * td_delta * features[f]
 
+    def save(self, filename):
+        import pickle
+        with open(filename, 'wb') as f:
+            pickle.dump(self.weights, f)
+        print(f"Weights saved to {filename}. Total features: {len(self.weights)}")
+
+    def load(self, filename):
+        import pickle
+        with open(filename, 'rb') as f:
+            self.weights = pickle.load(f)
+        print(f"Weights loaded from {filename}. Total features: {len(self.weights)}")
+

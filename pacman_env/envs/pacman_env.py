@@ -32,7 +32,7 @@ except Exception:
 class PacmanEnv(gymnasium.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, use_dict_obs=True, max_ghosts=5, use_graphics=True, episode_length=100):
+    def __init__(self, render_mode=None, use_dict_obs=True, max_ghosts=5, use_graphics=True, episode_length=1000):
         """Initialize the Pacman environment.
         
         Args:

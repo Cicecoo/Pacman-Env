@@ -19,13 +19,13 @@ PACMAN_ACTIONS = {
     'Stop': 4
 }
 
-layout = 'smallClassic.lay'
+layout = 'originalClassic.lay'
 
 checkpoint = 'checkpoints/approx_q_learning_agent-smallClassic-1000ep-a0.2-e0.1-g0.8-EnhenceEx-CanEatCapsule.pkl'
 
 # 配置选项
 ENABLE_VIDEO_RECORDING = True  # 设置为True以启用视频录制
-VIDEO_OUTPUT_DIR = 'videos/approx_q_learning/'      # 视频输出目录
+VIDEO_OUTPUT_DIR = 'videos/approx_q_learning/SonO'      # 视频输出目录
 VIDEO_FPS = 10                   # 视频帧率
 
 # load and test the trained agent

@@ -11,7 +11,7 @@ PACMAN_ACTIONS = {
     'Stop': 4
 }
 
-layout = 'smallClassic.lay'
+layout = 'mediumClassic.lay'
 
 if __name__ == "__main__":
     env = PacmanEnv(use_graphics=False)

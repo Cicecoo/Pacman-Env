@@ -19,11 +19,14 @@ PACMAN_ACTIONS = {
     'Stop': 4
 }
 
-layout = 'originalClassic.lay'
+layout = 'smallClassic.lay'
+# 'originalClassic.lay'
 
-checkpoint = 'checkpoints/approx_q_learning_agent-smallClassic-1000ep-a0.2-e0.1-g0.8-EnhenceEx-CanEatCapsule.pkl'
+checkpoint = './approx-q_smallClassic.lay_500ep.pkl'
+# 'checkpoints/approx_q_learning_agent-smallClassic-1000ep-a0.2-e0.1-g0.8-EnhenceEx-CanEatCapsule.pkl'
 
 # 配置选项
+USE_GRAPHICS = True          # 是否使用图形界面
 ENABLE_VIDEO_RECORDING = True  # 设置为True以启用视频录制
 VIDEO_OUTPUT_DIR = 'videos/approx_q_learning/SonO'      # 视频输出目录
 VIDEO_FPS = 10                   # 视频帧率
@@ -31,7 +34,7 @@ VIDEO_FPS = 10                   # 视频帧率
 # load and test the trained agent
 if __name__ == "__main__":
     # 创建基础环境
-    base_env = PacmanEnv(use_graphics=True)
+    base_env = PacmanEnv(use_graphics=USE_GRAPHICS)
     
     # 如果启用视频录制，包装环境
     if ENABLE_VIDEO_RECORDING and VIDEO_RECORDING_AVAILABLE:

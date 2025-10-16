@@ -150,7 +150,12 @@ class PacmanEnv(gymnasium.Env):
         }
 
     def _get_info(self):
-        return {}
+        return {
+            "steps": self.steps,
+            "score": self.game.state.getScore(),
+            "win": self.game.state.isWin(),
+            "lose": self.game.state.isLose(),
+        }
 
     def reset(self, seed=None, options=None, layout=None):
         # Seed RNG using gymnasium helper

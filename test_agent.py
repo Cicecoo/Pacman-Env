@@ -25,21 +25,23 @@ AGENTS = {
 }
 
 layout = 'smallClassic.lay'
+# 'smallClassic.lay'
 # 'originalClassic.lay'
 
 
-ckpt_name = 'approx-q_2ghosts_smallClassic_2000ep'
+ckpt_name = 'q_smallGrid_500ep' # 'approx-q_2ghosts_smallClassic_2000ep'
 ckpt_path = './' + ckpt_name + '.pkl'
 # 'checkpoints/approx_q_learning_agent-smallClassic-1000ep-a0.2-e0.1-g0.8-EnhenceEx-CanEatCapsule.pkl'
 
 # 配置选项
 ENABLE_VIDEO_RECORDING = False  # 设置为True以启用视频录制
-USE_GRAPHICS = False
+USE_GRAPHICS = True
 VIDEO_OUTPUT_DIR = f'videos/approx_q_learning/{ckpt_name}/{layout[:-4]}'     # 视频输出目录
 VIDEO_FPS = 10                   # 视频帧率
 TEST_EPISODES = 100               # 测试的回合数
 
-AGENT_TYPE = 'ApproximateQLearningAgent'  # 选择要测试的agent类型
+AGENT_TYPE = 'QLearningAgent' 
+#'ApproximateQLearningAgent'  # 选择要测试的agent类型
 
 # load and test the trained agent
 if __name__ == "__main__":
@@ -63,7 +65,8 @@ if __name__ == "__main__":
             print("  pip install imageio imageio-ffmpeg")
     
     # 加载agent
-    agent = ApproximateQLearningAgent(alpha=0, epsilon=0, gamma=0.8)
+    # agent = ApproximateQLearningAgent(alpha=0, epsilon=0, gamma=0.8)
+    agent = AGENTS.get(AGENT_TYPE, QLearningAgent)(alpha=0, epsilon=0, gamma=0.8)
     agent.set_test_mode()
     agent.load(ckpt_path)
     test_episodes = TEST_EPISODES

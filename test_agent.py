@@ -28,7 +28,7 @@ layout = 'smallClassic.lay'
 # 'originalClassic.lay'
 
 
-ckpt_name = 'approx-q_noFoodFlags_smallClassic_1000ep'
+ckpt_name = 'approx-q_2ghosts_smallClassic_2000ep'
 ckpt_path = './' + ckpt_name + '.pkl'
 # 'checkpoints/approx_q_learning_agent-smallClassic-1000ep-a0.2-e0.1-g0.8-EnhenceEx-CanEatCapsule.pkl'
 

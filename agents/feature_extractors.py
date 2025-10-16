@@ -392,6 +392,112 @@ class EnhancedExtractor_noFoodFlags(FeatureExtractor):
         features.divideAll(10.0)
         return features
 
-'''
-TODO 将class EnhancedSimpleExtractor(FeatureExtractor):扩展为能看到更多ghost（普通和scared）
-'''
+class EnhancedExtractor_2ghosts(FeatureExtractor):
+    """
+    同时追踪更多·ghost（最近的2个普通ghost和2个scared ghost）
+    
+    新增特征：
+    - 最近两个普通ghost的距离和方向
+    - 最近两个scared ghost的距离和方向
+    - 更精细的威胁评估和机会把握
+    """
+
+    def get_features(self, state, action):
+        # Extract game state information
+        food = state.getFood()
+        walls = state.getWalls()
+        capsules = state.getCapsules()
+        ghost_states = state.getGhostStates()
+        
+        features = util.Counter()
+        features["bias"] = 1.0
+
+        # Compute next position after action
+        x, y = state.getPacmanPosition()
+        dx, dy = Actions.directionToVector(action)
+        next_x, next_y = int(x + dx), int(y + dy)
+        next_pos = (next_x, next_y)
+
+        # Separate normal ghosts and scared ghosts with their distances
+        normal_ghost_dists = []
+        scared_ghost_dists = []
+        max_scared_timer = 0
+        
+        for ghost in ghost_states:
+            ghost_pos = ghost.getPosition()
+            ghost_x, ghost_y = int(ghost_pos[0]), int(ghost_pos[1])
+            
+            # Calculate Manhattan distance from next position to ghost
+            dist = abs(next_x - ghost_x) + abs(next_y - ghost_y)
+            
+            if ghost.scaredTimer > 0:
+                scared_ghost_dists.append((dist, (ghost_x, ghost_y)))
+                max_scared_timer = max(max_scared_timer, ghost.scaredTimer)
+            else:
+                normal_ghost_dists.append((dist, (ghost_x, ghost_y)))
+        
+        # Sort by distance to get closest ghosts
+        normal_ghost_dists.sort(key=lambda x: x[0])
+        scared_ghost_dists.sort(key=lambda x: x[0])
+
+        # Features for closest 2 normal ghosts
+        for i in range(min(2, len(normal_ghost_dists))):
+            dist, ghost_pos = normal_ghost_dists[i]
+            
+            # Distance feature (normalized)
+            features[f"normal-ghost-{i+1}-distance"] = float(dist) / (walls.width * walls.height)
+            
+            # 1-step-away danger feature
+            if next_pos in Actions.getLegalNeighbors(ghost_pos, walls):
+                features[f"normal-ghost-{i+1}-1-step-away"] = 1.0
+            
+            # Collision feature (immediate danger)
+            if next_pos == ghost_pos:
+                features[f"collides-with-normal-ghost-{i+1}"] = 1.0
+
+        # Features for closest 2 scared ghosts
+        for i in range(min(2, len(scared_ghost_dists))):
+            dist, ghost_pos = scared_ghost_dists[i]
+            
+            # Distance feature (normalized)
+            features[f"scared-ghost-{i+1}-distance"] = float(dist) / (walls.width * walls.height)
+            
+            # 1-step-away opportunity feature
+            if next_pos in Actions.getLegalNeighbors(ghost_pos, walls):
+                features[f"scared-ghost-{i+1}-1-step-away"] = 1.0
+            
+            # Eating scared ghost (high positive reward)
+            if next_pos == ghost_pos:
+                features[f"eats-scared-ghost-{i+1}"] = 1.0
+
+        # Overall ghost count features
+        features["num-normal-ghosts"] = float(len(normal_ghost_dists)) / 4.0  # Normalize by max ghosts
+        features["num-scared-ghosts"] = float(len(scared_ghost_dists)) / 4.0
+
+        # Scared timer remaining (normalized)
+        if max_scared_timer > 0:
+            features["scared-timer"] = float(max_scared_timer) / 40.0  # SCARED_TIME = 40
+
+        # Capsule features
+        features["eats-capsule"] = 1.0 if next_pos in capsules else 0.0
+        
+        if capsules:
+            dist = closestCapsule(next_pos, capsules, walls)
+            if dist is not None:
+                features["closest-capsule"] = float(dist) / (walls.width * walls.height)
+
+        # Food features - consider safety from ALL normal ghosts
+        min_normal_dist = normal_ghost_dists[0][0] if normal_ghost_dists else float('inf')
+        is_safe = (min_normal_dist > 1 or max_scared_timer > 0)
+        
+        if is_safe and food[next_x][next_y]:
+            features["eats-food"] = 1.0
+
+        # Distance to closest food
+        dist = closestFood(next_pos, food, walls)
+        if dist is not None:
+            features["closest-food"] = float(dist) / (walls.width * walls.height)
+
+        # Normalize all features
+        features.divideAll(10.0)
+        return features

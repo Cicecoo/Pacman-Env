@@ -12,8 +12,8 @@ PACMAN_ACTIONS = {
 }
 
 layout = 'smallClassic.lay'
-num_episodes = 1000
-ckpt_name = f'approx-q_noFoodFlags_{layout[:-4]}_{num_episodes}ep'
+num_episodes = 2000
+ckpt_name = f'approx-q_2ghosts_{layout[:-4]}_{num_episodes}ep'
 first_win = False
 
 

@@ -19,6 +19,11 @@ PACMAN_ACTIONS = {
     'Stop': 4
 }
 
+AGENTS = {
+    'QLearningAgent': QLearningAgent,
+    'ApproximateQLearningAgent': ApproximateQLearningAgent,
+}
+
 layout = 'smallClassic.lay'
 # 'originalClassic.lay'
 
@@ -26,10 +31,13 @@ checkpoint = './approx-q_smallClassic.lay_500ep.pkl'
 # 'checkpoints/approx_q_learning_agent-smallClassic-1000ep-a0.2-e0.1-g0.8-EnhenceEx-CanEatCapsule.pkl'
 
 # 配置选项
-USE_GRAPHICS = True          # 是否使用图形界面
-ENABLE_VIDEO_RECORDING = True  # 设置为True以启用视频录制
+ENABLE_VIDEO_RECORDING = False  # 设置为True以启用视频录制
+USE_GRAPHICS = False
 VIDEO_OUTPUT_DIR = 'videos/approx_q_learning/SonO'      # 视频输出目录
 VIDEO_FPS = 10                   # 视频帧率
+TEST_EPISODES = 100               # 测试的回合数
+
+AGENT_TYPE = 'ApproximateQLearningAgent'  # 选择要测试的agent类型
 
 # load and test the trained agent
 if __name__ == "__main__":
@@ -56,7 +64,10 @@ if __name__ == "__main__":
     agent = ApproximateQLearningAgent(alpha=0, epsilon=0, gamma=0.8)
     agent.set_test_mode()
     agent.load(checkpoint)
-    test_episodes = 10
+    test_episodes = TEST_EPISODES
+
+    score_list = []
+    win_list = []
 
     for episode in range(test_episodes):
         obs, info = env.reset(layout=layout)
@@ -74,6 +85,9 @@ if __name__ == "__main__":
             cur_state = new_state
 
         agent.reach_terminal_state(cur_state)
+
+        score_list.append(env.game.state.getScore())
+        win_list.append(1 if env.game.state.isWin() else 0)
         
         # 显示结果（如果有视频路径，也显示出来）
         result_msg = f"Episode {episode + 1}/{test_episodes}, Score: {agent.episode_rewards}"
@@ -82,4 +96,30 @@ if __name__ == "__main__":
         print(result_msg)
 
     print("Testing completed.")
-    
+
+    print(f"Highest Score over {test_episodes} episodes: {max(score_list)}")
+    print(f"Average Score over {test_episodes} episodes: {sum(score_list) / test_episodes}")
+    print(f"Win Rate over {test_episodes} episodes: {sum(win_list) / test_episodes * 100}%")
+
+    # save to json
+    import json
+    results = {
+        'info': {
+            'layout': layout,
+            'checkpoint': checkpoint,
+            'test_episodes': test_episodes,
+            'agent_type': AGENT_TYPE,
+        },
+        'scores': score_list,
+        'wins': win_list,
+        'highest_score': max(score_list),
+        'average_score': sum(score_list) / test_episodes,
+        'win_rate': sum(win_list) / test_episodes * 100
+    }
+
+    result_file = f'test_results_{AGENT_TYPE}_{layout[:-4]}_{test_episodes}ep.json'
+    with open(result_file, 'w') as f:
+        json.dump(results, f, indent=4)
+    print(f"Test results saved to {result_file}")
+
+

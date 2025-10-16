@@ -27,13 +27,15 @@ AGENTS = {
 layout = 'smallClassic.lay'
 # 'originalClassic.lay'
 
-checkpoint = './approx-q_smallClassic.lay_500ep.pkl'
+
+ckpt_name = 'approx-q_noFoodFlags_smallClassic_1000ep'
+ckpt_path = './' + ckpt_name + '.pkl'
 # 'checkpoints/approx_q_learning_agent-smallClassic-1000ep-a0.2-e0.1-g0.8-EnhenceEx-CanEatCapsule.pkl'
 
 # 配置选项
 ENABLE_VIDEO_RECORDING = False  # 设置为True以启用视频录制
 USE_GRAPHICS = False
-VIDEO_OUTPUT_DIR = 'videos/approx_q_learning/SonO'      # 视频输出目录
+VIDEO_OUTPUT_DIR = f'videos/approx_q_learning/{ckpt_name}/{layout[:-4]}'     # 视频输出目录
 VIDEO_FPS = 10                   # 视频帧率
 TEST_EPISODES = 100               # 测试的回合数
 
@@ -63,7 +65,7 @@ if __name__ == "__main__":
     # 加载agent
     agent = ApproximateQLearningAgent(alpha=0, epsilon=0, gamma=0.8)
     agent.set_test_mode()
-    agent.load(checkpoint)
+    agent.load(ckpt_path)
     test_episodes = TEST_EPISODES
 
     score_list = []
@@ -106,7 +108,7 @@ if __name__ == "__main__":
     results = {
         'info': {
             'layout': layout,
-            'checkpoint': checkpoint,
+            'checkpoint': ckpt_path,
             'test_episodes': test_episodes,
             'agent_type': AGENT_TYPE,
         },

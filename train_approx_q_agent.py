@@ -12,9 +12,9 @@ PACMAN_ACTIONS = {
 }
 
 layout = 'smallClassic.lay'
-num_episodes = 500
-ckpt_name = f'approx-q_{layout}_{num_episodes}ep'
-first_win = True
+num_episodes = 1000
+ckpt_name = f'approx-q_noFoodFlags_{layout[:-4]}_{num_episodes}ep'
+first_win = False
 
 
 if __name__ == "__main__":

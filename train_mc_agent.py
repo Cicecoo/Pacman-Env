@@ -17,7 +17,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from agents.mc_learning_agent import MCLearningAgent
-from agents.feature_extractors import SimpleExtractor, EnhancedSimpleExtractor
+from agents.feature_extractors import SimpleExtractor, EnhancedExtractor
 from pacman_env import PacmanEnv
 
 PACMAN_ACTIONS = {
@@ -221,7 +221,7 @@ def main():
 
     agent = MCLearningAgent(
             alpha=args.alpha, epsilon=args.epsilon, gamma=args.gamma,
-            feat_extractor=EnhancedSimpleExtractor()
+            feat_extractor=EnhancedExtractor()
         )
     
     # Load existing agent if specified

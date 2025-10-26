@@ -41,6 +41,7 @@
 \DeclareOption{proposal}{\def\HGP@mode{proposal}}       % 开题报告
 \DeclareOption{translation}{\def\HGP@mode{translation}} % 文献翻译
 \DeclareOption{graduatereport}{\def\HGP@mode{graduatereport}} % 研究生报告
+\DeclareOption{report}{\def\HGP@mode{report}}           % 报告
 
 \DeclareOption{biblatex}{\def\HGP@biblatex}             % 使用 biblatex 
 
@@ -67,6 +68,8 @@
 \newcommand{\classnum}[1]{\def\@classnum{#1}}
 \newcommand{\stunum}[1]{\def\@stunum{#1}}
 \newcommand{\instructor}[1]{\def\@instructor{#1}}
+\newcommand{\category}[1]{\def\@category{#1}}  % 类别
+\newcommand{\topic}[1]{\def\@topic{#1}}        % 报告科目
 \RequirePackage{template/cover/cover}
 
 % 中文摘要标题
@@ -139,6 +142,13 @@
             subsubsection={format={\bfseries\zihao{-4}}}
         }
     }
+    {report}{
+        \ctexset{
+            section={format={\centering\bfseries\zihao{-2}}},
+            subsection={format={\bfseries\zihao{4}}},
+            subsubsection={format={\bfseries\zihao{-4}}}
+        }
+    }
 }
 
 % 图表标题格式
@@ -184,6 +194,7 @@
         {proposal}{华中科技大学本科生毕业设计（论文）开题报告}
         {thesis}{\ziju{1}华中科技大学毕业设计}
         {graduatereport}{\ziju{1}华中科技大学研究生课程报告}
+        {report}{\ziju{1}华中科技大学研究生课程报告}
     }
 }
 \fancyhead[C]{\textcolor[RGB]{192,0,0}{

@@ -1,0 +1,26 @@
+% 使用 report 模式的示例
+\documentclass[report, biblatex]{template/hust}
+
+\addbibresource{ref.bib}
+\usepackage{macros}
+\usepackage{booktabs}
+
+% 封面信息
+% \title{课程报告标题示例}
+\author{张昭骏}
+\stunum{M202573989}
+\school{计算机科学与技术 25级}
+\category{学术型硕士}              % 类别：必修/选修等
+\topic{强化学习}    % 报告科目
+\date{2025年10月25日}
+
+\begin{document}
+    \maketitle  % 生成封面
+    
+    \newpage
+    \pagenumbering{arabic}
+
+    \include{body/intro}
+    \include{body/main}
+    
+\end{document}

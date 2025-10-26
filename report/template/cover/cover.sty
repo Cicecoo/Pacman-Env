@@ -4,7 +4,9 @@
     \makeatletter
     \begin{titlepage}
         \centering
-        \vspace*{-0.1cm}
+        \IfStrEqCase{\HGP@mode}{
+            {report}{\vspace*{3cm}}  % report 模式增加顶部空白
+        }[\vspace*{-0.1cm}]  % 其他模式使用原来的间距
          \IfStrEqCase{\HGP@mode}{
             {translation}{
                 
@@ -25,6 +27,9 @@
                 %     \hline
                 %     \end{tabular} \\ [2em]
                 % \end{flushright}
+            }
+            {report}{
+                % 可以在这里添加 report 模式特有的顶部内容
             }
         }
         \includegraphics[height=1.42cm]{template/cover/logo.eps}\\[5em]
@@ -51,26 +56,44 @@
                 %     \zihao{2.5} 课程：\zihao{2.5}\@title \\ % \textit{} \\
                 % \end{tabular}\\[3em]
             }
+            {report}{
+                {\zhzhongsong\fontsize{36pt}{43pt}\selectfont 研究生课程报告}\\[9em]
+                % report 模式在标题和表格之间增加间距
+            }
         }
         \zihao{4}
-        \begin{tabular}{p{4em}p{11em}<{\centering}}
-            
-            院\hfill 系 & \@school \\ \cline{2-2} \\[-1.2em] 
-            专业班级 & \@classnum \\ \cline{2-2} \\[-1.2em] 
-            姓\hfill 名 & \@author \\ \cline{2-2} \\[-1.2em]
-            学\hfill 号 & \@stunum \\ \cline{2-2} \\[-1.2em]
-            % 指导教师 & \@instructor \\ \cline{2-2} \\[-1.2em]
-            
-            
-            
-            
-        \end{tabular} \\[5.5em] % [3.5em] → [4.5em]
+        % 定义默认表格格式
+        \newcommand{\defaultinfotable}{%
+            \begin{tabular}{p{4em}p{11em}<{\centering}}
+                院\hfill 系 & \@school \\ \cline{2-2} \\[-1.2em] 
+                专业班级 & \@classnum \\ \cline{2-2} \\[-1.2em] 
+                姓\hfill 名 & \@author \\ \cline{2-2} \\[-1.2em]
+                学\hfill 号 & \@stunum \\ \cline{2-2} \\[-1.2em]
+            \end{tabular}%
+        }
+        % 定义 report 模式的表格格式
+        \newcommand{\rltable}{%
+            \begin{tabular}{p{4em}p{11em}<{\centering}}
+                姓\hfill 名 & \@author \\ \cline{2-2} \\[-1.2em]
+                学\hfill 号 & \@stunum \\ \cline{2-2} \\[-1.2em]
+                系、年级 & \@school \\ \cline{2-2} \\[-1.2em]
+                类\hfill 别 & \@category \\ \cline{2-2} \\[-1.2em]
+                报告科目 & \@topic \\ \cline{2-2} \\[-1.2em]
+                日\hfill 期 & \@date \\ \cline{2-2} \\[-1.2em]
+            \end{tabular}%
+        }
+        % 根据模式选择表格
         \IfStrEqCase{\HGP@mode}{
-            {thesis}{\@date}
-            {proposal}{\number\year 年 02 月}
-            {translation}{\number\year 年 02 月}
-            {graduatereport}{\@date}
-        }\\
+            {report}{\rltable}
+        }[\defaultinfotable]
+        \\[5.5em] % [3.5em] → [4.5em]
+        \IfStrEqCase{\HGP@mode}{
+            {thesis}{\@date\\}
+            {proposal}{\number\year 年 02 月\\}
+            {translation}{\number\year 年 02 月\\}
+            {graduatereport}{\@date\\}
+            {report}{}  % report 模式日期已在表格中，这里不再显示
+        }
     \end{titlepage}
     %\includepdf[pages=2]{template/cover/\HGP@mode.pdf}
     \clearpage

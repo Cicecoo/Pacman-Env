@@ -1,0 +1,79 @@
+\renewcommand{\maketitle}{
+    \pagestyle{plain}
+    \pagenumbering{gobble}
+    \makeatletter
+    \begin{titlepage}
+        \centering
+        \vspace*{-0.1cm}
+         \IfStrEqCase{\HGP@mode}{
+            {translation}{
+                
+            }
+            {proposal}{
+                
+            }
+            {thesis}{
+                
+            }
+            {graduatereport}{
+                % \begin{flushright}
+                %     \begin{tabular}[c]{|p{20mm}|p{50mm}|}
+                %     \hline
+                %     分数 &    \\
+                %     \hline
+                %     评卷人 &   \\
+                %     \hline
+                %     \end{tabular} \\ [2em]
+                % \end{flushright}
+            }
+        }
+        \includegraphics[height=1.42cm]{template/cover/logo.eps}\\[5em]
+        \IfStrEqCase{\HGP@mode}{
+            {translation}{
+                {\zihao{2}\songti\bfseries 本科生毕业设计（论文）参考文献译文}\\[6em]
+                \begin{tabular}{p{6em}p{9cm}}
+                    \zihao{3} 译文出处： & \zihao{5}\textit{\@title} \\
+                \end{tabular}\\[3em]
+            }
+            {thesis}{
+                {\zhzhongsong\fontsize{36pt}{43pt}\selectfont\bfseries 本科生毕业设计}\\[6em]
+                {\zihao{2}\heiti\bfseries \@title}\\[7em]
+            }
+            {graduatereport}{
+                % {\zihao{-0}\songti\bfseries 研究生课程报告}\\[5em]
+                % {\zihao{2}\heiti\@title}\\[6em]
+
+                {\zhzhongsong\fontsize{36pt}{43pt}\selectfont 研究生课程报告}\\[6em]
+                {\zihao{2}\heiti \@title}\\[9em] %[7em] → [8em]
+
+                % {\zihao{-0}\songti\bfseries 研究生课程报告}\\[5em]
+                % \begin{tabular}{c}
+                %     \zihao{2.5} 课程：\zihao{2.5}\@title \\ % \textit{} \\
+                % \end{tabular}\\[3em]
+            }
+        }
+        \zihao{4}
+        \begin{tabular}{p{4em}p{11em}<{\centering}}
+            
+            院\hfill 系 & \@school \\ \cline{2-2} \\[-1.2em] 
+            专业班级 & \@classnum \\ \cline{2-2} \\[-1.2em] 
+            姓\hfill 名 & \@author \\ \cline{2-2} \\[-1.2em]
+            学\hfill 号 & \@stunum \\ \cline{2-2} \\[-1.2em]
+            % 指导教师 & \@instructor \\ \cline{2-2} \\[-1.2em]
+            
+            
+            
+            
+        \end{tabular} \\[5.5em] % [3.5em] → [4.5em]
+        \IfStrEqCase{\HGP@mode}{
+            {thesis}{\@date}
+            {proposal}{\number\year 年 02 月}
+            {translation}{\number\year 年 02 月}
+            {graduatereport}{\@date}
+        }\\
+    \end{titlepage}
+    %\includepdf[pages=2]{template/cover/\HGP@mode.pdf}
+    \clearpage
+    \pagestyle{fancy}
+    \pagenumbering{arabic}
+}

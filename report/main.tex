@@ -1,0 +1,47 @@
+\documentclass[graduatereport, biblatex]{template/hust}
+
+% \usepackage[backend=biber, style=numeric, sorting=none]{biblatex}
+\addbibresource{ref.bib}
+
+\usepackage{macros}
+\usepackage{booktabs}
+
+\usepackage{emptypage}
+
+\usepackage[none]{hyphenat}
+\hyphenation{ex-am-ple-word}
+
+\title{\mbox{新能源技术}}
+
+\author{张昭骏}
+\school{计算机科学与技术}
+\classnum{硕2501}
+\stunum{M202573989}
+% \instructor{刘康} 
+\date{2025年10月17日}
+
+
+% 毕业论文模板
+\begin{document}
+    \maketitle                              % 封面
+
+    % \newpage
+    % \pagenumbering{Roman}
+
+    % \include{body/abstract-ch}              % 中文摘要
+    % \include{body/abstract-en}              % 英文摘要
+
+    % \tableofcontents                        % 目录
+    \newpage
+    \thispagestyle{empty}
+    \mbox{}
+
+    \newpage
+    \pagenumbering{arabic}
+    % \include{body/introduction}                 % 正文
+    \include{body/intro}
+    \include{body/main}     
+
+
+
+\end{document}

@@ -1,0 +1,314 @@
+{
+  "weight_history": {
+    "0": {
+      "bias": -8.69396131754564,
+      "#-of-normal-ghosts-1-step-away": -10.012601110492861,
+      "#-of-scared-ghosts-1-step-away": 0.0,
+      "eats-scared-ghost": 0.0,
+      "eats-capsule": 0.0,
+      "closest-capsule": -0.5376364820579259,
+      "eats-food": 1.5239953680694045,
+      "closest-food": -0.1460467040259522
+    },
+    "50": {
+      "bias": 7.276830245726043,
+      "#-of-normal-ghosts-1-step-away": -300.17513384944414,
+      "#-of-scared-ghosts-1-step-away": 6.27382795412946,
+      "eats-scared-ghost": 0.0,
+      "eats-capsule": -0.017041722113008053,
+      "closest-capsule": 0.10092683482214046,
+      "eats-food": 291.9536064250081,
+      "closest-food": -4.503805894056309,
+      "closest-scared-ghost": 0.1635929248711221,
+      "scared-timer": 5.694499942840766
+    },
+    "100": {
+      "bias": 24.761093268502975,
+      "#-of-normal-ghosts-1-step-away": -526.5204790677426,
+      "#-of-scared-ghosts-1-step-away": 10.21376064439218,
+      "eats-scared-ghost": 0.0,
+      "eats-capsule": -0.02381430325035493,
+      "closest-capsule": 0.7557521690715275,
+      "eats-food": 470.47793312543365,
+      "closest-food": -8.22107898074712,
+      "closest-scared-ghost": 0.5093038558965912,
+      "scared-timer": 12.78862561317349
+    },
+    "150": {
+      "bias": 20.69423696209409,
+      "#-of-normal-ghosts-1-step-away": -739.5494167547996,
+      "#-of-scared-ghosts-1-step-away": 16.415131484646377,
+      "eats-scared-ghost": 1.959371464641899,
+      "eats-capsule": -0.002663287416975223,
+      "closest-capsule": -0.7085190435292259,
+      "eats-food": 579.6935121477217,
+      "closest-food": -11.595018272325268,
+      "closest-scared-ghost": 0.5111399149337561,
+      "scared-timer": 22.400807537690515
+    },
+    "200": {
+      "bias": -42.16344425203041,
+      "#-of-normal-ghosts-1-step-away": -976.4945005488073,
+      "#-of-scared-ghosts-1-step-away": 30.78994809047817,
+      "eats-scared-ghost": 10.19853230683232,
+      "eats-capsule": 0.09665624654415862,
+      "closest-capsule": -0.4560166319941844,
+      "eats-food": 630.2302584971176,
+      "closest-food": -14.54582507698452,
+      "closest-scared-ghost": 0.7679507343561265,
+      "scared-timer": 36.73890808885689
+    },
+    "250": {
+      "bias": -26.145502044463726,
+      "#-of-normal-ghosts-1-step-away": -1160.060843724778,
+      "#-of-scared-ghosts-1-step-away": 72.67747212973872,
+      "eats-scared-ghost": 34.245912632265835,
+      "eats-capsule": 1.1369666062400352,
+      "closest-capsule": 0.9684593120410047,
+      "eats-food": 688.3845111198759,
+      "closest-food": -15.083403014189068,
+      "closest-scared-ghost": 2.825202030819249,
+      "scared-timer": 95.21181796093757
+    },
+    "300": {
+      "bias": -19.57201480474619,
+      "#-of-normal-ghosts-1-step-away": -1337.1850547726724,
+      "#-of-scared-ghosts-1-step-away": 121.52192794949306,
+      "eats-scared-ghost": 53.62756994283839,
+      "eats-capsule": 2.7765501827320485,
+      "closest-capsule": 2.329150494879321,
+      "eats-food": 724.1521634326157,
+      "closest-food": -16.04056232012238,
+      "closest-scared-ghost": 5.151940109791409,
+      "scared-timer": 146.72297609274145
+    },
+    "350": {
+      "bias": -33.242362874749894,
+      "#-of-normal-ghosts-1-step-away": -1508.6735589203058,
+      "#-of-scared-ghosts-1-step-away": 177.2492502245084,
+      "eats-scared-ghost": 88.74710992167665,
+      "eats-capsule": 5.567153409307113,
+      "closest-capsule": 3.397337264648369,
+      "eats-food": 741.4708142193871,
+      "closest-food": -17.465290466482106,
+      "closest-scared-ghost": 6.7290859574487305,
+      "scared-timer": 216.0928432532392
+    },
+    "400": {
+      "bias": -91.64550867134663,
+      "#-of-normal-ghosts-1-step-away": -1689.830662711958,
+      "#-of-scared-ghosts-1-step-away": 202.96203541883153,
+      "eats-scared-ghost": 101.8937762734102,
+      "eats-capsule": 9.071895861059769,
+      "closest-capsule": 1.9797718166092495,
+      "eats-food": 719.4722444339611,
+      "closest-food": -20.060940874320877,
+      "closest-scared-ghost": 7.822169494653295,
+      "scared-timer": 266.1087613797356
+    },
+    "450": {
+      "bias": -127.78098233948533,
+      "#-of-normal-ghosts-1-step-away": -1863.4781714125809,
+      "#-of-scared-ghosts-1-step-away": 244.3265732591484,
+      "eats-scared-ghost": 113.79766091853662,
+      "eats-capsule": 13.161422778613828,
+      "closest-capsule": 0.9993264947983094,
+      "eats-food": 707.7585151036025,
+      "closest-food": -21.808012064351548,
+      "closest-scared-ghost": 8.441569249672776,
+      "scared-timer": 297.57121701195416
+    },
+    "500": {
+      "bias": -65.41762120637199,
+      "#-of-normal-ghosts-1-step-away": -2000.4805178289616,
+      "#-of-scared-ghosts-1-step-away": 316.3811338628532,
+      "eats-scared-ghost": 125.60012967904737,
+      "eats-capsule": 19.76555649848662,
+      "closest-capsule": 5.527306708298529,
+      "eats-food": 742.8670394674101,
+      "closest-food": -21.875897416544074,
+      "closest-scared-ghost": 10.09186218137586,
+      "scared-timer": 372.76018501350427
+    },
+    "550": {
+      "bias": -79.94716631752158,
+      "#-of-normal-ghosts-1-step-away": -2153.404273923585,
+      "#-of-scared-ghosts-1-step-away": 367.2315002544335,
+      "eats-scared-ghost": 146.1503109568595,
+      "eats-capsule": 26.98269466003146,
+      "closest-capsule": 4.412076088175695,
+      "eats-food": 725.8177967279892,
+      "closest-food": -24.291620848387492,
+      "closest-scared-ghost": 11.855980314006432,
+      "scared-timer": 416.8328333561308
+    },
+    "600": {
+      "bias": -39.06934530182211,
+      "#-of-normal-ghosts-1-step-away": -2275.652816971657,
+      "#-of-scared-ghosts-1-step-away": 386.3156052501951,
+      "eats-scared-ghost": 161.37883774372955,
+      "eats-capsule": 32.563464424771524,
+      "closest-capsule": 3.1138676396487988,
+      "eats-food": 745.0441276527937,
+      "closest-food": -24.702978171822505,
+      "closest-scared-ghost": 13.463524423447428,
+      "scared-timer": 438.154763643821
+    },
+    "650": {
+      "bias": -70.0669998115335,
+      "#-of-normal-ghosts-1-step-away": -2415.866573147736,
+      "#-of-scared-ghosts-1-step-away": 410.1188000791054,
+      "eats-scared-ghost": 172.2529757056513,
+      "eats-capsule": 39.2518197411402,
+      "closest-capsule": 3.4686071335544413,
+      "eats-food": 721.7573927010299,
+      "closest-food": -26.2377472160758,
+      "closest-scared-ghost": 18.186541275929855,
+      "scared-timer": 490.2095996250245
+    },
+    "700": {
+      "bias": -58.703669063805485,
+      "#-of-normal-ghosts-1-step-away": -2525.725264742563,
+      "#-of-scared-ghosts-1-step-away": 434.4140375266543,
+      "eats-scared-ghost": 185.66322259474336,
+      "eats-capsule": 47.482317032175416,
+      "closest-capsule": 4.353086367736122,
+      "eats-food": 694.556016391792,
+      "closest-food": -26.987213732513105,
+      "closest-scared-ghost": 20.157447742705454,
+      "scared-timer": 535.3819734910198
+    },
+    "750": {
+      "bias": -66.0153725276033,
+      "#-of-normal-ghosts-1-step-away": -2656.1667014180366,
+      "#-of-scared-ghosts-1-step-away": 456.266644457372,
+      "eats-scared-ghost": 192.73391243430945,
+      "eats-capsule": 54.60382809312187,
+      "closest-capsule": 2.8752686186428327,
+      "eats-food": 698.690645079926,
+      "closest-food": -28.602746812666464,
+      "closest-scared-ghost": 20.578973607276556,
+      "scared-timer": 541.699164086062
+    },
+    "800": {
+      "bias": -51.163763654144454,
+      "#-of-normal-ghosts-1-step-away": -2761.754482757447,
+      "#-of-scared-ghosts-1-step-away": 472.1783048734348,
+      "eats-scared-ghost": 202.63326638559855,
+      "eats-capsule": 61.65495048162138,
+      "closest-capsule": 4.308701721654768,
+      "eats-food": 696.3735900384436,
+      "closest-food": -29.845927773573678,
+      "closest-scared-ghost": 23.21207556052138,
+      "scared-timer": 563.0346802339275
+    },
+    "850": {
+      "bias": -9.9388772077999,
+      "#-of-normal-ghosts-1-step-away": -2859.932871729872,
+      "#-of-scared-ghosts-1-step-away": 500.2838788969819,
+      "eats-scared-ghost": 214.82650753198908,
+      "eats-capsule": 72.26460351411352,
+      "closest-capsule": 6.016449432608709,
+      "eats-food": 703.729530241164,
+      "closest-food": -30.12619189784333,
+      "closest-scared-ghost": 22.29478379001096,
+      "scared-timer": 590.9040838797818
+    },
+    "900": {
+      "bias": 10.680825343767403,
+      "#-of-normal-ghosts-1-step-away": -2956.927308876821,
+      "#-of-scared-ghosts-1-step-away": 520.8669547186541,
+      "eats-scared-ghost": 225.50169238276982,
+      "eats-capsule": 79.68797133064602,
+      "closest-capsule": 4.198816483130933,
+      "eats-food": 708.8062126777327,
+      "closest-food": -30.877390945980057,
+      "closest-scared-ghost": 23.61497611882061,
+      "scared-timer": 622.3906968955049
+    },
+    "950": {
+      "bias": -6.053016169444444,
+      "#-of-normal-ghosts-1-step-away": -3040.0866121356753,
+      "#-of-scared-ghosts-1-step-away": 529.3708884997384,
+      "eats-scared-ghost": 231.14985747458883,
+      "eats-capsule": 84.1157367247808,
+      "closest-capsule": 4.706945539614284,
+      "eats-food": 678.8704515615037,
+      "closest-food": -31.868441431604353,
+      "closest-scared-ghost": 23.956326334663693,
+      "scared-timer": 637.6511482243413
+    },
+    "999": {
+      "bias": 35.57421340107276,
+      "#-of-normal-ghosts-1-step-away": -3115.221158940993,
+      "#-of-scared-ghosts-1-step-away": 560.5790409132316,
+      "eats-scared-ghost": 244.37676277270893,
+      "eats-capsule": 97.67536556112795,
+      "closest-capsule": 3.750390722704493,
+      "eats-food": 669.6961060243825,
+      "closest-food": -33.009098544555044,
+      "closest-scared-ghost": 22.96219896455771,
+      "scared-timer": 661.7216133272042
+    }
+  },
+  "feature_names": [
+    "bias",
+    "#-of-normal-ghosts-1-step-away",
+    "#-of-scared-ghosts-1-step-away",
+    "eats-scared-ghost",
+    "eats-capsule",
+    "closest-capsule",
+    "closest-food"
+  ],
+  "analysis": [
+    {
+      "feature": "bias",
+      "initial": 0,
+      "final": 0,
+      "change": 0,
+      "abs_change": 0
+    },
+    {
+      "feature": "#-of-normal-ghosts-1-step-away",
+      "initial": 0,
+      "final": 0,
+      "change": 0,
+      "abs_change": 0
+    },
+    {
+      "feature": "#-of-scared-ghosts-1-step-away",
+      "initial": 0,
+      "final": 0,
+      "change": 0,
+      "abs_change": 0
+    },
+    {
+      "feature": "eats-scared-ghost",
+      "initial": 0,
+      "final": 0,
+      "change": 0,
+      "abs_change": 0
+    },
+    {
+      "feature": "eats-capsule",
+      "initial": 0,
+      "final": 0,
+      "change": 0,
+      "abs_change": 0
+    },
+    {
+      "feature": "closest-capsule",
+      "initial": 0,
+      "final": 0,
+      "change": 0,
+      "abs_change": 0
+    },
+    {
+      "feature": "closest-food",
+      "initial": 0,
+      "final": 0,
+      "change": 0,
+      "abs_change": 0
+    }
+  ]
+}

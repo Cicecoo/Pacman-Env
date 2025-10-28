@@ -6,7 +6,7 @@ from .feature_extractors import SimpleExtractor, EnhancedExtractor, EnhancedExtr
 class ApproximateQLearningAgent(QLearningAgent):
     def __init__(self, alpha=1.0, epsilon=0.05, gamma=0.8):
         super().__init__(alpha, epsilon, gamma)
-        self.feat_extractor = EnhancedExtractor_2ghosts() # EnhancedExtractor_noFoodFlags() # EnhancedSimpleExtractor() #_noFlags() #SimpleExtractor()
+        self.feat_extractor = EnhancedExtractor() #EnhancedExtractor_2ghosts() # EnhancedExtractor_noFoodFlags() # EnhancedSimpleExtractor() #_noFlags() #SimpleExtractor()
         self.weights = {}  # 特征权重，而非Q值表
 
     def get_q_value(self, state, action):

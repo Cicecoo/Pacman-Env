@@ -1,22 +1,22 @@
 \section{实验与分析}
 
-本章介绍实验设置及结果分析。其中，由于 Monte Carlo Learning 和 Q-Learning 受限于状态空间爆炸问题，仅在小规模地图上进行测试；
-主要对 Approximate Q-Learning 算法进行了详细的对比实验和消融实验，以验证其有效性，并分析特征设计对性能的影响。
+本章介绍实验设置及结果分析。其中，MC Learning 和 Q-Learning 受限于状态空间爆炸问题，仅在小规模地图上进行测试；
+主要对 Approximate Q-Learning 算法进行了详细的对比实验和消融实验，以验证其有效性，并分析不同模块及特征设计对性能的影响。
 
 \subsection{实验设置}
 
 \subsubsection{实验环境}
 
 实验使用多种规模的地图进行测试。
-填表式方法（MC learning 和 Q-Learning）由于状态空间爆炸问题，仅在小规模地图 \texttt{smallGrid}（$7 \times 7$，约 3 个食物）上进行训练和测试。
+填表式方法（MC learning 和 Q-Learning）由于状态空间爆炸问题，仅在小规模地图 \texttt{smallGrid}（$7 \times 7$，2 个食物）上进行训练和测试。
 该地图包含 1 个鬼，没有胶囊。
 
 Approximate Q-Learning 则在更大规模的地图上进行实验，包括：
-\texttt{smallClassic}（$20 \times 7$，约 28 个食物），
-\texttt{mediumClassic}（$20 \times 11$，约 48 个食物），
-\texttt{originalClassic}（$28 \times 27$，约 240 个食物）。
-这些地图均包含 2 个随机移动的鬼和若干胶囊（\texttt{small} 和 \texttt{medium} 中有 2 个，\texttt{original} 中有 4 个）。
-鬼的移动策略为随机选择合法动作，攻击概率和逃跑概率均设为 0.2，引入一定的随机性。
+\texttt{smallClassic}（$20 \times 7$，55 个食物），
+\texttt{mediumClassic}（$20 \times 11$，97 个食物），
+\texttt{originalClassic}（$28 \times 27$，229 个食物）。
+这些地图均包含若干随机移动的鬼和胶囊（\texttt{small} 和 \texttt{medium} 中各有 2 个，\texttt{original} 中各有 4 个）。
+鬼的移动采用偏好的随机策略，普通状态下倾向于追击吃豆人，恐慌状态下倾向于逃跑，使用随游戏状态调整的概率分布控制。
 图 \ref{fig:classic_layouts} 展示了三种 Classic 地图的结构。
 
 \begin{figure}[htbp]
@@ -38,16 +38,16 @@ Approximate Q-Learning 则在更大规模的地图上进行实验，包括：
 三种算法采用相同的超参数配置。
 学习率 $\alpha = 0.1$，探索率 $\epsilon = 0.05$，折扣因子 $\gamma = 0.8$。
 MC learning 和 Q-Learning 在 \texttt{smallGrid} 上训练 500 episode。
-Approximate Q-Learning 在三种 Classic 地图上分别训练 1000 episode。
-每个 episode 的最大步数限制为 1000 步，超过则强制终止。
+Approximate Q-Learning 仅在 \texttt{smallClassic} 地图上训练 1000 episode。
+每个 episode 的最大步数限制为 1000 步，超过则进行截断。
 
 \subsubsection{评价指标}
 
-实验采用以下指标评估算法性能。
+实验采用以下指标评估算法性能：
 平均分数（Average Score）衡量智能体获得的平均总分，反映整体表现；
 胜率（Win Rate）表示成功吃掉所有食物的 episode 比例，反映任务完成能力；
 最高分数（Highest Score）记录测试中获得的最高分数，反映算法的性能上限。
-所有指标均在训练完成后的 100 个测试 episode 上统计，测试时设置 $\epsilon = 0$ 、$\alpha = 0$。
+所有指标均在 100 个测试 episode 上统计，测试时设置 $\epsilon = 0$ 、$\alpha = 0$。
 
 
 \subsection{对比实验结果与分析}
@@ -76,12 +76,13 @@ Approximate Q-Learning 在三种 Classic 地图上分别训练 1000 episode。
 
 Q-Learning 在 \texttt{smallGrid} 上取得了 94\% 的胜率和 436.0 的平均分数，表明在状态空间较小的情况下，表格式方法能够有效学习最优策略。
 MC Learning 的胜率为 50\%，平均分数为 -7.8，性能显著低于 Q-Learning。
-这可能是因为 Q-Learning 采用单步 TD 更新，能够快速传播价值信息，
+这可能是因为 Q-Learning 采用单步 TD 更新，能够快速传播奖励信息，更容易训练；
 而 MC learning 需要等待完整 episode 才能更新，在长 episode 场景下学习效率较低，且对初期探索的依赖性更强。
 
 然而，表格式方法的局限性在于无法扩展到更大规模的地图。
-当尝试在 \texttt{smallClassic} 等地图上训练时，由于状态空间过大（约 $10^{17}$），智能体在有限的训练时间内无法充分访问所有状态，导致学习失败。
-这一问题促使引入函数近似方法。
+当尝试在 \texttt{smallClassic} 等地图上训练时，经过 2000 episode 后仍未能收敛。
+这可能是由于由于状态空间过大（约 $10^{17}$），智能体在有限的训练时间内无法充分访问所有状态，导致学习失败。
+% 这一问题促使引入线性函数逼近方法。
 
 \subsubsection{Approximate Q-Learning 在不同规模地图上的表现}
 
@@ -105,17 +106,19 @@ MC Learning 的胜率为 50\%，平均分数为 -7.8，性能显著低于 Q-Lear
     \label{tab:approx_q_performance}
 \end{table}
 
-从实验结果可以观察到，在 \texttt{smallClassic} 和 \texttt{mediumClassic} 地图上，Approximate Q-Learning 分别取得了 89\% 和 84\% 的胜率，表现稳定。
-通过特征提取和线性函数近似，智能体能够有效泛化到未见过的状态，克服了表格式方法在大状态空间下的局限性。
+可以看到，虽然只在 \texttt{smallClassic} 地图上训练，但
+在 \texttt{smallClassic} 和 \texttt{mediumClassic} 地图上，Approximate Q-Learning 分别取得了 89\% 和 84\% 的胜率，表现稳定。
+这说明通过特征提取和线性函数逼近，智能体能够有效泛化到未见过的状态，克服了表格式方法在大状态空间下的局限性。
 
-随着地图规模继续增大，算法在 \texttt{originalClassic} 地图上的胜率降低至 62\%，相比小地图有所下降但仍保持较好的性能。
-该地图的状态空间和食物数量远超训练环境（约 240 个食物），且地图结构更加复杂、鬼的数量更多。
-这一结果表明函数近似方法具有较强的泛化能力。
+随着地图规模继续增大，算法在 \texttt{originalClassic} 地图上的胜率降低至 62\%。
+该地图的状态空间和食物数量远超训练环境，且地图结构更加复杂、鬼的数量更多，
+虽然胜率相比小地图有所下降，但可以认为智能体仍保持了较好的性能。
+进一步表明 Approximate Q-Learning 具有较强的泛化能力。
 
 
 \subsection{消融实验结果与分析}
 
-\subsubsection{函数近似方法的组件消融}
+\subsubsection{Approximate Q-Learning 的组件消融}
 
 为验证 Approximate Q-Learning 中各组件的作用，进行消融实验。
 所有实验均在 \texttt{smallClassic} 地图上训练 1000 episode。
@@ -138,18 +141,22 @@ MC Learning 的胜率为 50\%，平均分数为 -7.8，性能显著低于 Q-Lear
     \label{tab:ablation_approx_q}
 \end{table}
 
-实验结果表明，线性函数近似对性能至关重要。
-移除线性逼近后，仍使用特征向量表示状态，但采用表格式存储每个特征组合的 Q 值，性能大幅下降：平均分数从 1332.1 降至 130.2，胜率从 89\% 降至 24\%。
-这是因为表格式方法无法泛化到未见过的特征组合。
-相比之下，线性函数近似通过 $Q(s,a) = \mathbf{w} \cdot \mathbf{f}(s,a)$ 实现特征空间的插值，即使特征组合未在训练中出现，也能根据相似特征的权重给出合理估计。
+
+移除线性逼近后，仍使用特征向量表示状态，但采用表格式存储每个特征组合的 Q 值，性能大幅下降，
+平均分数从 1332.1 降至 130.2，胜率从 89\% 降至 24\%。
+这可能是因为表格式方法无法泛化到未见过的特征组合。
+相比之下，线性函数逼近通过 $Q(s,a) = \mathbf{w} \cdot \mathbf{f}(s,a)$ 实现特征空间的插值，
+即使特征组合未在训练中出现，也能根据相似特征的权重给出合理估计。
 
 移除特征提取后，算法相当于在原始状态空间上应用线性逼近。
-由于 \texttt{smallClassic} 的状态空间过大（约 $10^{17}$），智能体在有限训练时间内无法充分探索，导致学习失败。
-这一结果也验证了特征提取在降维中的必要性。
+由于 \texttt{smallClassic} 的状态空间过大，智能体在有限训练时间内无法充分探索，导致学习失败。
+这一结果也说明了特征提取和状态空间降维的必要性。
 
-\subsubsection{特征设计的影响}
+\subsubsection{特征消融实验}
 
-在 Approximate Q-Learning 基础上，进一步实验不同特征配置对性能的影响，重点分析标志位特征的作用。
+在特征设计中，除了距离类特征和鬼相关特征这类比较自然的设计外，还引入了一些标志位特征以指示特定事件的发生。
+标志位特征的信息似乎已经蕴含在距离特征中，其必要性也存疑。
+本节讨论不同特征配置对性能的影响，重点分析标志位特征的作用。
 实验均使用 \texttt{smallClassic} 地图，训练 1000 episode。
 
 \begin{table}[h]
@@ -183,17 +190,16 @@ MC Learning 的胜率为 50\%，平均分数为 -7.8，性能显著低于 Q-Lear
 \subsubsection{首次获胜现象分析}
 
 实验中观察到，Approximate Q-Learning 在训练初期（通常前 2-3 个 episode）即可首次取得胜利。
-然而通过可视化分析发现，此时智能体的策略尚不成熟。
-
+然而观察可视化游戏画面发现，此时智能体的策略尚不成熟。
 具体表现为：智能体不会主动寻找远处的食物，当视野范围内无食物时倾向于停留或原地徘徊；仅在遇到鬼追赶时被动移动，若在移动过程中碰到食物才会继续得分。
-这种早期获胜依赖于环境的随机性，智能体尚未学到系统性的搜索策略。
+这说明这种早期获胜依赖于环境的随机性，而智能体尚未学到系统性的行动策略。
 
 随着训练的进行，智能体逐渐学会主动规划路径、高效收集食物，胜率和平均分数稳步提升，最终收敛到稳定的性能水平。
-这一现象反映了强化学习中探索与利用的平衡过程：初期随机探索可能偶然获得高回报，但需要通过持续学习才能形成稳定的最优策略。
+这一现象反映了强化学习中探索与利用的平衡过程，初期随机探索可能偶然获得高回报，但需要通过持续学习才能形成稳定的最优策略。
 
 \subsubsection{特征权重的变化}
 
-训练过程中，特征权重的变化反映了智能体学习策略的过程。
+训练过程中，特征权重的变化可以反映智能体学习策略的过程。
 图 \ref{fig:weight_evolution} 展示了主要特征权重在 \texttt{smallClassic} 地图 1000 轮训练中的变化趋势，按权重变化幅度分为三组。
 
 \begin{figure}[htbp]
@@ -203,22 +209,25 @@ MC Learning 的胜率为 50\%，平均分数为 -7.8，性能显著低于 Q-Lear
     \label{fig:weight_evolution}
 \end{figure}
 
-从权重变化曲线可以观察到以下现象。
+% 从权重变化曲线可以观察到以下现象。
 
 图 (a) 展示了大幅度变化的特征。
-\texttt{\#-of-normal-ghosts-1-step-away} 权重绝对值持续增长至超过 2500，且在整个训练过程中未见饱和趋势，表明回避危险鬼是学习的核心策略。
+\texttt{\#-of-normal-ghosts-1-step-away} 权重绝对值持续增长至超过 3000，且在整个训练过程中未见饱和趋势，表明回避危险鬼是学习的核心策略。
 
 图 (b) 展示了中等幅度变化的特征。
-\texttt{eats-food} 权重在训练初期快速增长，约 500 轮后稳定在 730 左右，说明智能体优先学会获取即时奖励。
-\texttt{\#-of-scared-ghosts-1-step-away} 和 \texttt{scared-timer} 权重持续增长至约 500 和 550，反映了智能体逐渐学会利用鬼受惊状态的战术优势。
-\texttt{eats-scared-ghost} 权重在训练约 150 轮后才开始明显增长，最终达到约 210，说明智能体在掌握基本生存策略后才学会这一进阶技巧。
+\texttt{eats-food} 权重在训练初期快速增长，约 500 轮后稳定在 700 左右，说明智能体优先学会获取即时回报。
+\texttt{\#-of-scared-ghosts-1-step-away} 和 \texttt{scared-timer} 权重持续增长至约 550 和 650，
+反映了智能体逐渐学会利用鬼的恐慌状态获得更高的奖励。
+\texttt{eats-scared-ghost} 权重在训练约 200 轮后才开始明显增长，最终达到约 250，说明智能体在掌握基本生存策略后才学会这一更复杂的策略。
 
 图 (c) 展示了小幅度变化的特征。
+\texttt{eats-capsule} 权重也在约 200 轮后开始显著增长，虽然幅度相对较小，但也表明智能体逐渐认识到吃胶囊的长期价值。
 距离类特征（\texttt{closest-food}、\texttt{closest-scared-ghost}、\texttt{closest-capsule}）
-和 \texttt{eats-capsule} 的权重整体呈增长趋势，但变化幅度远小于其他特征。
-这些特征的权重变化模式与预期存在差异，可能与特征设计或训练动态有关，具体原因尚不明确。
+的权重整体呈增长趋势，但变化幅度远小于其他特征。
+这些特征的权重变化模式与预期存在差异，直观上这些信息应该可以有效指导智能体，但可能实际作用并不显著，
+由于缺少进一步的实验，暂时无法给出明确解释。
 
-总体而言，权重变化呈现分阶段学习的特点：训练初期优先学会即时收益和危险回避，中期开始利用鬼受惊状态，后期逐渐优化长期规划。
+总体而言，权重变化呈现分阶段学习的特点，训练初期优先学会获取即时回报和回避危险，后期逐渐学习更复杂的策略、获取长期回报。
 
 
 % 关于线性逼近，即使不用线性逼近，也可以用 feature 替代 state 做表格，但这样仍然无法应对未见过的新状态
